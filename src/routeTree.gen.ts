@@ -9,10 +9,22 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
+import { Route as ResultRouteImport } from './routes/result'
+import { Route as RecommendationRouteImport } from './routes/recommendation'
 import { Route as QuizRouteImport } from './routes/quiz'
 import { Route as AttemptRouteImport } from './routes/attempt'
 import { Route as IndexRouteImport } from './routes/index'
 
+const ResultRoute = ResultRouteImport.update({
+  id: '/result',
+  path: '/result',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const RecommendationRoute = RecommendationRouteImport.update({
+  id: '/recommendation',
+  path: '/recommendation',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const QuizRoute = QuizRouteImport.update({
   id: '/quiz',
   path: '/quiz',
@@ -33,34 +45,56 @@ export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/attempt': typeof AttemptRoute
   '/quiz': typeof QuizRoute
+  '/recommendation': typeof RecommendationRoute
+  '/result': typeof ResultRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/attempt': typeof AttemptRoute
   '/quiz': typeof QuizRoute
+  '/recommendation': typeof RecommendationRoute
+  '/result': typeof ResultRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/attempt': typeof AttemptRoute
   '/quiz': typeof QuizRoute
+  '/recommendation': typeof RecommendationRoute
+  '/result': typeof ResultRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/attempt' | '/quiz'
+  fullPaths: '/' | '/attempt' | '/quiz' | '/recommendation' | '/result'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/attempt' | '/quiz'
-  id: '__root__' | '/' | '/attempt' | '/quiz'
+  to: '/' | '/attempt' | '/quiz' | '/recommendation' | '/result'
+  id: '__root__' | '/' | '/attempt' | '/quiz' | '/recommendation' | '/result'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AttemptRoute: typeof AttemptRoute
   QuizRoute: typeof QuizRoute
+  RecommendationRoute: typeof RecommendationRoute
+  ResultRoute: typeof ResultRoute
 }
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
+    '/result': {
+      id: '/result'
+      path: '/result'
+      fullPath: '/result'
+      preLoaderRoute: typeof ResultRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/recommendation': {
+      id: '/recommendation'
+      path: '/recommendation'
+      fullPath: '/recommendation'
+      preLoaderRoute: typeof RecommendationRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/quiz': {
       id: '/quiz'
       path: '/quiz'
@@ -89,6 +123,8 @@ const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AttemptRoute: AttemptRoute,
   QuizRoute: QuizRoute,
+  RecommendationRoute: RecommendationRoute,
+  ResultRoute: ResultRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
