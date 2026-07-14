@@ -9,12 +9,18 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
+import { Route as ReviewRouteImport } from './routes/review'
 import { Route as ResultRouteImport } from './routes/result'
 import { Route as RecommendationRouteImport } from './routes/recommendation'
 import { Route as QuizRouteImport } from './routes/quiz'
 import { Route as AttemptRouteImport } from './routes/attempt'
 import { Route as IndexRouteImport } from './routes/index'
 
+const ReviewRoute = ReviewRouteImport.update({
+  id: '/review',
+  path: '/review',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ResultRoute = ResultRouteImport.update({
   id: '/result',
   path: '/result',
@@ -47,6 +53,7 @@ export interface FileRoutesByFullPath {
   '/quiz': typeof QuizRoute
   '/recommendation': typeof RecommendationRoute
   '/result': typeof ResultRoute
+  '/review': typeof ReviewRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -54,6 +61,7 @@ export interface FileRoutesByTo {
   '/quiz': typeof QuizRoute
   '/recommendation': typeof RecommendationRoute
   '/result': typeof ResultRoute
+  '/review': typeof ReviewRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -62,13 +70,27 @@ export interface FileRoutesById {
   '/quiz': typeof QuizRoute
   '/recommendation': typeof RecommendationRoute
   '/result': typeof ResultRoute
+  '/review': typeof ReviewRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/attempt' | '/quiz' | '/recommendation' | '/result'
+  fullPaths:
+    | '/'
+    | '/attempt'
+    | '/quiz'
+    | '/recommendation'
+    | '/result'
+    | '/review'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/attempt' | '/quiz' | '/recommendation' | '/result'
-  id: '__root__' | '/' | '/attempt' | '/quiz' | '/recommendation' | '/result'
+  to: '/' | '/attempt' | '/quiz' | '/recommendation' | '/result' | '/review'
+  id:
+    | '__root__'
+    | '/'
+    | '/attempt'
+    | '/quiz'
+    | '/recommendation'
+    | '/result'
+    | '/review'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -77,10 +99,18 @@ export interface RootRouteChildren {
   QuizRoute: typeof QuizRoute
   RecommendationRoute: typeof RecommendationRoute
   ResultRoute: typeof ResultRoute
+  ReviewRoute: typeof ReviewRoute
 }
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
+    '/review': {
+      id: '/review'
+      path: '/review'
+      fullPath: '/review'
+      preLoaderRoute: typeof ReviewRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/result': {
       id: '/result'
       path: '/result'
@@ -125,7 +155,18 @@ const rootRouteChildren: RootRouteChildren = {
   QuizRoute: QuizRoute,
   RecommendationRoute: RecommendationRoute,
   ResultRoute: ResultRoute,
+  ReviewRoute: ReviewRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
+
+import type { getRouter } from './router.tsx'
+import type { startInstance } from './start.ts'
+declare module '@tanstack/react-start' {
+  interface Register {
+    ssr: true
+    router: Awaited<ReturnType<typeof getRouter>>
+    config: Awaited<ReturnType<typeof startInstance.getOptions>>
+  }
+}
