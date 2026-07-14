@@ -273,7 +273,7 @@ function StatTile({
   return (
     <div className="rounded-2xl border border-white/60 bg-white/70 p-4">
       <span className={`grid h-9 w-9 place-items-center rounded-xl ${toneClass}`}>
-        <Icon className="h-4.5 w-4.5" strokeWidth={2.25} />
+        <Icon className="h-4 w-4" strokeWidth={2.25} />
       </span>
       <div className="font-display mt-3 text-2xl font-bold text-foreground">{value}</div>
       <div className="mt-0.5 text-xs text-muted-foreground">{label}</div>
