@@ -9,10 +9,19 @@ import {
   Sparkles,
   XCircle,
 } from "lucide-react";
-import { useMemo } from "react";
+import { useEffect, useMemo } from "react";
 import { useQuiz } from "../context/QuizContext";
+import { useAttempt } from "../lib/history-store";
+import { computeTopicStats } from "../lib/recommendations";
+
+interface ResultSearch {
+  id?: string;
+}
 
 export const Route = createFileRoute("/result")({
+  validateSearch: (s: Record<string, unknown>): ResultSearch => ({
+    id: typeof s.id === "string" ? s.id : undefined,
+  }),
   component: Result,
 });
 
@@ -30,35 +39,21 @@ function performanceMessage(acc: number) {
 
 function Result() {
   const navigate = useNavigate();
-  const {
-    questions,
-    answers,
-    correctCount,
-    wrongCount,
-    accuracy,
-    timeTakenSec,
-    subject,
-    difficulty,
-    resetQuiz,
-  } = useQuiz();
+  const { id } = Route.useSearch();
+  const { attempt, hydrated } = useAttempt(id);
+  const { resetQuiz } = useQuiz();
 
-  // Topic-wise breakdown for the analysis section.
-  const topicStats = useMemo(() => {
-    const map = new Map<string, { correct: number; total: number }>();
-    questions.forEach((q, i) => {
-      const cur = map.get(q.topic) ?? { correct: 0, total: 0 };
-      cur.total += 1;
-      if (answers[i] === q.correctIndex) cur.correct += 1;
-      map.set(q.topic, cur);
-    });
-    return Array.from(map.entries()).map(([topic, s]) => ({
-      topic,
-      ...s,
-      pct: Math.round((s.correct / s.total) * 100),
-    }));
-  }, [questions, answers]);
+  // Route protection: no id or attempt missing → redirect to quiz config.
+  useEffect(() => {
+    if (hydrated && !attempt) navigate({ to: "/quiz" });
+  }, [hydrated, attempt, navigate]);
 
-  if (questions.length === 0) {
+  const topicStats = useMemo(
+    () => (attempt ? computeTopicStats(attempt) : []),
+    [attempt],
+  );
+
+  if (!attempt) {
     return (
       <main className="mx-auto flex min-h-[60vh] max-w-lg flex-col items-center justify-center px-4 text-center">
         <h1 className="font-display text-2xl font-bold text-foreground">
@@ -77,8 +72,17 @@ function Result() {
     );
   }
 
+  const {
+    questions,
+    correctCount,
+    wrongCount,
+    accuracy,
+    timeTakenSec,
+    subject,
+    difficulty,
+  } = attempt;
+
   const perf = performanceMessage(accuracy);
-  // Circumference for the SVG progress ring (r = 52).
   const R = 52;
   const CIRC = 2 * Math.PI * R;
   const dash = (accuracy / 100) * CIRC;
@@ -96,7 +100,6 @@ function Result() {
       </div>
 
       <div className="mx-auto max-w-5xl px-4 py-14 sm:px-6 sm:py-20 lg:px-8">
-        {/* Top hero result card */}
         <section className="glass animate-fade-up rounded-[28px] p-6 sm:p-10">
           <div className="grid gap-8 lg:grid-cols-[1.2fr_1fr] lg:items-center">
             <div>
@@ -132,7 +135,6 @@ function Result() {
               </div>
             </div>
 
-            {/* Performance ring */}
             <div className="flex items-center justify-center">
               <div className="relative">
                 <svg width="180" height="180" viewBox="0 0 120 120" className="-rotate-90">
@@ -142,14 +144,7 @@ function Result() {
                       <stop offset="100%" stopColor="oklch(0.62 0.22 293)" />
                     </linearGradient>
                   </defs>
-                  <circle
-                    cx="60"
-                    cy="60"
-                    r={R}
-                    fill="none"
-                    stroke="oklch(0.92 0.012 255)"
-                    strokeWidth="10"
-                  />
+                  <circle cx="60" cy="60" r={R} fill="none" stroke="oklch(0.92 0.012 255)" strokeWidth="10" />
                   <circle
                     cx="60"
                     cy="60"
@@ -174,7 +169,6 @@ function Result() {
             </div>
           </div>
 
-          {/* Stat tiles */}
           <div className="mt-8 grid grid-cols-2 gap-3 sm:grid-cols-4">
             <StatTile icon={CheckCircle2} tone="success" label="Correct" value={correctCount} />
             <StatTile icon={XCircle} tone="destructive" label="Wrong" value={wrongCount} />
@@ -183,7 +177,6 @@ function Result() {
           </div>
         </section>
 
-        {/* Topic-wise analysis */}
         <section className="glass mt-8 rounded-[24px] p-6 sm:p-8">
           <h2 className="font-display text-xl font-semibold text-foreground">
             Topic-wise analysis
@@ -204,10 +197,7 @@ function Result() {
                 <div className="mt-2 h-2 w-full overflow-hidden rounded-full bg-muted">
                   <div
                     className="h-full rounded-full transition-all duration-700"
-                    style={{
-                      width: `${t.pct}%`,
-                      backgroundImage: "var(--gradient-accent)",
-                    }}
+                    style={{ width: `${t.pct}%`, backgroundImage: "var(--gradient-accent)" }}
                   />
                 </div>
               </li>
@@ -215,10 +205,10 @@ function Result() {
           </ul>
         </section>
 
-        {/* Actions */}
         <div className="mt-8 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
           <Link
             to="/review"
+            search={{ id: attempt.id }}
             className="btn-primary group inline-flex items-center justify-center gap-2 rounded-2xl px-5 py-3 text-sm font-semibold"
           >
             <Eye className="h-4 w-4" />
@@ -233,6 +223,7 @@ function Result() {
           </button>
           <Link
             to="/recommendation"
+            search={{ id: attempt.id }}
             className="inline-flex items-center justify-center gap-2 rounded-2xl glass px-5 py-3 text-sm font-semibold text-foreground transition-transform hover:-translate-y-0.5"
           >
             <Sparkles className="h-4 w-4 text-accent" />
