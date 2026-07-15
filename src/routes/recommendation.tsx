@@ -1,8 +1,9 @@
-import { createFileRoute, Link } from "@tanstack/react-router";
+import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import {
   ArrowLeft,
   BookOpen,
   CalendarDays,
+  ExternalLink,
   Home,
   PlayCircle,
   Sparkles,
@@ -11,64 +12,71 @@ import {
   TrendingDown,
   TrendingUp,
 } from "lucide-react";
-import { useMemo } from "react";
-import { useQuiz } from "../context/QuizContext";
+import { useEffect, useMemo } from "react";
+import { useAttempt } from "../lib/history-store";
+import {
+  buildRoadmap,
+  coachNote,
+  computeTopicStats,
+  practiceItems,
+  recommendedVideos,
+  splitTopics,
+} from "../lib/recommendations";
+
+interface RecSearch {
+  id?: string;
+}
 
 export const Route = createFileRoute("/recommendation")({
+  validateSearch: (s: Record<string, unknown>): RecSearch => ({
+    id: typeof s.id === "string" ? s.id : undefined,
+  }),
   component: Recommendation,
 });
 
-// Static 7-day roadmap template — the day labels are filled with the user's subject.
-const ROADMAP = [
-  { day: "Day 1", focus: "Foundational concepts revision", minutes: 45 },
-  { day: "Day 2", focus: "Weak topic deep dive", minutes: 60 },
-  { day: "Day 3", focus: "Timed practice set (Easy)", minutes: 30 },
-  { day: "Day 4", focus: "Mixed-topic MCQs", minutes: 45 },
-  { day: "Day 5", focus: "Interview-style problems", minutes: 60 },
-  { day: "Day 6", focus: "Mock quiz (Medium)", minutes: 45 },
-  { day: "Day 7", focus: "Final review & reflection", minutes: 30 },
-];
-
-const DUMMY_VIDEOS = [
-  { title: "Crack Placement MCQs in 10 Minutes", author: "PrepCast", length: "12:04" },
-  { title: "Top 20 Interview Concepts Explained", author: "CS Compass", length: "18:22" },
-  { title: "Speed Round: Weak-Topic Booster", author: "Coach AI", length: "08:47" },
-];
-
 function Recommendation() {
-  const { questions, answers, subject, accuracy } = useQuiz();
+  const navigate = useNavigate();
+  const { id } = Route.useSearch();
+  const { attempt, hydrated } = useAttempt(id);
 
-  // Split topics into strong (>= 60%) and weak (< 60%) buckets.
-  const { weak, strong } = useMemo(() => {
-    const map = new Map<string, { correct: number; total: number }>();
-    questions.forEach((q, i) => {
-      const cur = map.get(q.topic) ?? { correct: 0, total: 0 };
-      cur.total += 1;
-      if (answers[i] === q.correctIndex) cur.correct += 1;
-      map.set(q.topic, cur);
-    });
-    const w: string[] = [];
-    const s: string[] = [];
-    for (const [topic, v] of map) {
-      const pct = (v.correct / v.total) * 100;
-      (pct >= 60 ? s : w).push(topic);
-    }
-    // Fallback dummy content when the user hasn't taken a quiz yet.
-    if (map.size === 0) {
-      return {
-        weak: ["Time Complexity", "Normalization", "TCP/IP"],
-        strong: ["Basic Syntax", "Percentages", "Joins"],
-      };
-    }
-    return { weak: w, strong: s };
-  }, [questions, answers]);
+  useEffect(() => {
+    if (hydrated && !attempt) navigate({ to: "/quiz" });
+  }, [hydrated, attempt, navigate]);
 
-  const message =
-    accuracy >= 80
-      ? "You're placement-ready — keep the momentum with harder sets."
-      : accuracy >= 50
-        ? "Solid base. A focused week on weak topics will unlock the next level."
-        : "Every expert was once a beginner. Start small, stay consistent, and you'll level up fast.";
+  const derived = useMemo(() => {
+    if (!attempt) return null;
+    const stats = computeTopicStats(attempt);
+    const { weak, strong } = splitTopics(stats);
+    return {
+      weak,
+      strong,
+      note: coachNote(attempt.accuracy),
+      roadmap: buildRoadmap(attempt.subject, weak),
+      practice: practiceItems(weak),
+      videos: recommendedVideos(attempt.subject, weak),
+    };
+  }, [attempt]);
+
+  if (!attempt || !derived) {
+    return (
+      <main className="mx-auto flex min-h-[60vh] max-w-lg flex-col items-center justify-center px-4 text-center">
+        <h1 className="font-display text-2xl font-bold text-foreground">
+          No recommendations yet
+        </h1>
+        <p className="mt-2 text-sm text-muted-foreground">
+          Complete a quiz to unlock your personalized study plan.
+        </p>
+        <Link
+          to="/quiz"
+          className="btn-primary mt-6 inline-flex items-center gap-2 rounded-2xl px-6 py-3 text-sm font-semibold"
+        >
+          Start a quiz
+        </Link>
+      </main>
+    );
+  }
+
+  const { weak, strong, note, roadmap, practice, videos } = derived;
 
   return (
     <main className="relative overflow-hidden bg-hero">
@@ -87,12 +95,11 @@ function Recommendation() {
             Your personalized <span className="gradient-text">roadmap</span>
           </h1>
           <p className="mx-auto mt-4 max-w-xl text-sm text-muted-foreground sm:text-base">
-            {subject ? `Tailored for ${subject}` : "Sample recommendations"} —
-            follow the plan below to sharpen weak areas and reinforce strengths.
+            Tailored for {attempt.subject} · {attempt.difficulty} — you scored{" "}
+            {attempt.correctCount}/{attempt.questions.length} ({attempt.accuracy}%).
           </p>
         </div>
 
-        {/* Motivational banner */}
         <section className="glass mt-10 flex items-start gap-4 rounded-[22px] p-6 sm:p-7">
           <span
             className="grid h-11 w-11 flex-shrink-0 place-items-center rounded-2xl text-primary-foreground"
@@ -104,11 +111,10 @@ function Recommendation() {
             <h2 className="font-display text-lg font-semibold text-foreground">
               Coach's note
             </h2>
-            <p className="mt-1 text-sm text-muted-foreground">{message}</p>
+            <p className="mt-1 text-sm text-muted-foreground">{note}</p>
           </div>
         </section>
 
-        {/* Weak / Strong */}
         <div className="mt-6 grid gap-5 lg:grid-cols-2">
           <TopicList
             title="Weak topics"
@@ -126,7 +132,6 @@ function Recommendation() {
           />
         </div>
 
-        {/* 7-day roadmap */}
         <section className="glass mt-8 rounded-[24px] p-6 sm:p-8">
           <div className="flex items-center gap-2">
             <CalendarDays className="h-5 w-5 text-primary" strokeWidth={2.25} />
@@ -135,7 +140,7 @@ function Recommendation() {
             </h2>
           </div>
           <ol className="mt-5 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-            {ROADMAP.map((r, i) => (
+            {roadmap.map((r, i) => (
               <li
                 key={r.day}
                 className="animate-fade-up rounded-2xl border border-white/60 bg-white/70 p-4"
@@ -149,15 +154,12 @@ function Recommendation() {
                     {r.minutes} min
                   </span>
                 </div>
-                <p className="mt-2 text-sm font-medium text-foreground">
-                  {r.focus}
-                </p>
+                <p className="mt-2 text-sm font-medium text-foreground">{r.focus}</p>
               </li>
             ))}
           </ol>
         </section>
 
-        {/* Recommended practice + videos */}
         <div className="mt-8 grid gap-5 lg:grid-cols-2">
           <section className="glass rounded-[24px] p-6 sm:p-7">
             <div className="flex items-center gap-2">
@@ -166,22 +168,34 @@ function Recommendation() {
                 Recommended practice
               </h2>
             </div>
-            <ul className="mt-4 space-y-3">
-              {(weak.length ? weak : ["Mixed practice"]).slice(0, 4).map((t) => (
+            <ul className="mt-4 space-y-4">
+              {practice.map((p) => (
                 <li
-                  key={t}
-                  className="flex items-center justify-between rounded-xl border border-white/60 bg-white/70 px-4 py-3"
+                  key={p.topic}
+                  className="rounded-2xl border border-white/60 bg-white/70 p-4"
                 >
-                  <span className="flex items-center gap-2 text-sm font-medium text-foreground">
-                    <BookOpen className="h-4 w-4 text-primary" />
-                    {t}
-                  </span>
-                  <Link
-                    to="/quiz"
-                    className="text-xs font-semibold text-primary hover:underline"
-                  >
-                    Practice →
-                  </Link>
+                  <div className="flex items-center justify-between">
+                    <span className="flex items-center gap-2 text-sm font-semibold text-foreground">
+                      <BookOpen className="h-4 w-4 text-primary" />
+                      {p.topic}
+                    </span>
+                    <Link
+                      to="/quiz"
+                      className="text-xs font-semibold text-primary hover:underline"
+                    >
+                      Practice →
+                    </Link>
+                  </div>
+                  <ul className="mt-3 flex flex-wrap gap-1.5">
+                    {p.drills.map((d) => (
+                      <li
+                        key={d}
+                        className="rounded-full bg-primary/10 px-2.5 py-1 text-xs font-medium text-primary"
+                      >
+                        {d}
+                      </li>
+                    ))}
+                  </ul>
                 </li>
               ))}
             </ul>
@@ -195,25 +209,30 @@ function Recommendation() {
               </h2>
             </div>
             <ul className="mt-4 space-y-3">
-              {DUMMY_VIDEOS.map((v) => (
-                <li
-                  key={v.title}
-                  className="flex items-center gap-3 rounded-xl border border-white/60 bg-white/70 p-3"
-                >
-                  <span
-                    className="grid h-10 w-10 flex-shrink-0 place-items-center rounded-xl text-primary-foreground"
-                    style={{ backgroundImage: "var(--gradient-primary)" }}
+              {videos.map((v) => (
+                <li key={v.url}>
+                  <a
+                    href={v.url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="group flex items-center gap-3 rounded-xl border border-white/60 bg-white/70 p-3 transition-all hover:-translate-y-0.5 hover:bg-white hover:shadow-soft"
                   >
-                    <PlayCircle className="h-5 w-5" />
-                  </span>
-                  <div className="min-w-0 flex-1">
-                    <p className="truncate text-sm font-semibold text-foreground">
-                      {v.title}
-                    </p>
-                    <p className="text-xs text-muted-foreground">
-                      {v.author} · {v.length}
-                    </p>
-                  </div>
+                    <span
+                      className="grid h-10 w-10 flex-shrink-0 place-items-center rounded-xl text-primary-foreground"
+                      style={{ backgroundImage: "var(--gradient-primary)" }}
+                    >
+                      <PlayCircle className="h-5 w-5" />
+                    </span>
+                    <div className="min-w-0 flex-1">
+                      <p className="truncate text-sm font-semibold text-foreground">
+                        {v.title}
+                      </p>
+                      <p className="truncate text-xs text-muted-foreground">
+                        {v.subtitle}
+                      </p>
+                    </div>
+                    <ExternalLink className="h-4 w-4 flex-shrink-0 text-muted-foreground transition-colors group-hover:text-primary" />
+                  </a>
                 </li>
               ))}
             </ul>
@@ -223,6 +242,7 @@ function Recommendation() {
         <div className="mt-10 flex flex-col-reverse gap-3 sm:flex-row sm:justify-between">
           <Link
             to="/result"
+            search={{ id: attempt.id }}
             className="inline-flex items-center justify-center gap-2 rounded-2xl glass px-5 py-3 text-sm font-semibold text-foreground transition-transform hover:-translate-y-0.5"
           >
             <ArrowLeft className="h-4 w-4" />

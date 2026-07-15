@@ -1,15 +1,29 @@
-import { createFileRoute, Link } from "@tanstack/react-router";
+import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { ArrowLeft, Check, Info, X } from "lucide-react";
-import { useQuiz } from "../context/QuizContext";
+import { useEffect } from "react";
+import { useAttempt } from "../lib/history-store";
+
+interface ReviewSearch {
+  id?: string;
+}
 
 export const Route = createFileRoute("/review")({
+  validateSearch: (s: Record<string, unknown>): ReviewSearch => ({
+    id: typeof s.id === "string" ? s.id : undefined,
+  }),
   component: Review,
 });
 
 function Review() {
-  const { questions, answers } = useQuiz();
+  const navigate = useNavigate();
+  const { id } = Route.useSearch();
+  const { attempt, hydrated } = useAttempt(id);
 
-  if (questions.length === 0) {
+  useEffect(() => {
+    if (hydrated && !attempt) navigate({ to: "/quiz" });
+  }, [hydrated, attempt, navigate]);
+
+  if (!attempt) {
     return (
       <main className="mx-auto flex min-h-[60vh] max-w-lg flex-col items-center justify-center px-4 text-center">
         <h1 className="font-display text-2xl font-bold text-foreground">
@@ -28,6 +42,8 @@ function Review() {
     );
   }
 
+  const { questions, answers } = attempt;
+
   return (
     <main className="relative overflow-hidden bg-hero">
       <div aria-hidden="true" className="pointer-events-none absolute inset-0 -z-10">
@@ -39,6 +55,7 @@ function Review() {
         <div className="animate-fade-up">
           <Link
             to="/result"
+            search={{ id: attempt.id }}
             className="inline-flex items-center gap-1.5 text-sm font-medium text-muted-foreground hover:text-foreground"
           >
             <ArrowLeft className="h-4 w-4" />
@@ -48,7 +65,8 @@ function Review() {
             Review your <span className="gradient-text">answers</span>
           </h1>
           <p className="mt-3 text-sm text-muted-foreground sm:text-base">
-            Green means you nailed it. Red means it's worth a second look.
+            {attempt.subject} · {attempt.difficulty} — green means you nailed
+            it, red means it's worth a second look.
           </p>
         </div>
 
@@ -60,9 +78,7 @@ function Review() {
               <li
                 key={q.id}
                 className={`glass animate-fade-up rounded-[22px] p-6 sm:p-7 ${
-                  isCorrect
-                    ? "ring-1 ring-success/40"
-                    : "ring-1 ring-destructive/30"
+                  isCorrect ? "ring-1 ring-success/40" : "ring-1 ring-destructive/30"
                 }`}
               >
                 <div className="flex items-start justify-between gap-3">
@@ -126,6 +142,9 @@ function Review() {
                               <X className="h-3.5 w-3.5" strokeWidth={3} />
                               Your pick
                             </span>
+                          )}
+                          {!isSel && !isAns && selected === null && (
+                            <span className="text-muted-foreground">—</span>
                           )}
                         </span>
                       </li>

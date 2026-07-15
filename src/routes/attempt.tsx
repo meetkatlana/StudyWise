@@ -9,6 +9,7 @@ import {
   Trophy,
 } from "lucide-react";
 import { useQuiz } from "../context/QuizContext";
+import { addAttempt } from "../lib/history-store";
 
 export const Route = createFileRoute("/attempt")({
   component: Attempt,
@@ -30,7 +31,10 @@ function Attempt() {
     submitQuiz,
     subject,
     difficulty,
+    count,
     correctCount,
+    wrongCount,
+    accuracy,
   } = useQuiz();
 
   // Elapsed time tracker (increments every second while on this page).
@@ -74,7 +78,24 @@ function Attempt() {
 
   const handleSubmit = () => {
     submitQuiz(elapsed);
-    navigate({ to: "/result" });
+    if (!subject || !difficulty) {
+      navigate({ to: "/quiz" });
+      return;
+    }
+    // Persist this attempt to localStorage so it appears in History
+    // and so Result/Review/Recommendation can look it up by id.
+    const saved = addAttempt({
+      subject,
+      difficulty,
+      count: count ?? questions.length,
+      questions,
+      answers,
+      correctCount,
+      wrongCount,
+      accuracy,
+      timeTakenSec: elapsed,
+    });
+    navigate({ to: "/result", search: { id: saved.id } });
   };
 
   return (
