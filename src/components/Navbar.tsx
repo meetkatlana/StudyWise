@@ -5,7 +5,7 @@ import { Menu, X, Sparkles } from "lucide-react";
 const navLinks = [
   { to: "/", label: "Home" },
   { to: "/quiz", label: "Quiz" },
-  { to: "/result", label: "Results" },
+  { to: "/history", label: "History" },
   { to: "/recommendation", label: "AI Coach" },
 ] as const;
 

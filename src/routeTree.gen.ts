@@ -13,6 +13,7 @@ import { Route as ReviewRouteImport } from './routes/review'
 import { Route as ResultRouteImport } from './routes/result'
 import { Route as RecommendationRouteImport } from './routes/recommendation'
 import { Route as QuizRouteImport } from './routes/quiz'
+import { Route as HistoryRouteImport } from './routes/history'
 import { Route as AttemptRouteImport } from './routes/attempt'
 import { Route as IndexRouteImport } from './routes/index'
 
@@ -36,6 +37,11 @@ const QuizRoute = QuizRouteImport.update({
   path: '/quiz',
   getParentRoute: () => rootRouteImport,
 } as any)
+const HistoryRoute = HistoryRouteImport.update({
+  id: '/history',
+  path: '/history',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const AttemptRoute = AttemptRouteImport.update({
   id: '/attempt',
   path: '/attempt',
@@ -50,6 +56,7 @@ const IndexRoute = IndexRouteImport.update({
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/attempt': typeof AttemptRoute
+  '/history': typeof HistoryRoute
   '/quiz': typeof QuizRoute
   '/recommendation': typeof RecommendationRoute
   '/result': typeof ResultRoute
@@ -58,6 +65,7 @@ export interface FileRoutesByFullPath {
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/attempt': typeof AttemptRoute
+  '/history': typeof HistoryRoute
   '/quiz': typeof QuizRoute
   '/recommendation': typeof RecommendationRoute
   '/result': typeof ResultRoute
@@ -67,6 +75,7 @@ export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/attempt': typeof AttemptRoute
+  '/history': typeof HistoryRoute
   '/quiz': typeof QuizRoute
   '/recommendation': typeof RecommendationRoute
   '/result': typeof ResultRoute
@@ -77,16 +86,25 @@ export interface FileRouteTypes {
   fullPaths:
     | '/'
     | '/attempt'
+    | '/history'
     | '/quiz'
     | '/recommendation'
     | '/result'
     | '/review'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/attempt' | '/quiz' | '/recommendation' | '/result' | '/review'
+  to:
+    | '/'
+    | '/attempt'
+    | '/history'
+    | '/quiz'
+    | '/recommendation'
+    | '/result'
+    | '/review'
   id:
     | '__root__'
     | '/'
     | '/attempt'
+    | '/history'
     | '/quiz'
     | '/recommendation'
     | '/result'
@@ -96,6 +114,7 @@ export interface FileRouteTypes {
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AttemptRoute: typeof AttemptRoute
+  HistoryRoute: typeof HistoryRoute
   QuizRoute: typeof QuizRoute
   RecommendationRoute: typeof RecommendationRoute
   ResultRoute: typeof ResultRoute
@@ -132,6 +151,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof QuizRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/history': {
+      id: '/history'
+      path: '/history'
+      fullPath: '/history'
+      preLoaderRoute: typeof HistoryRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/attempt': {
       id: '/attempt'
       path: '/attempt'
@@ -152,6 +178,7 @@ declare module '@tanstack/react-router' {
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AttemptRoute: AttemptRoute,
+  HistoryRoute: HistoryRoute,
   QuizRoute: QuizRoute,
   RecommendationRoute: RecommendationRoute,
   ResultRoute: ResultRoute,
