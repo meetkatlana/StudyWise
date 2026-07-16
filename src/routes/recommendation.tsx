@@ -22,6 +22,7 @@ import {
   recommendedVideos,
   splitTopics,
 } from "../lib/recommendations";
+import { RequireAuth } from "../components/RequireAuth";
 
 interface RecSearch {
   id?: string;
@@ -31,7 +32,11 @@ export const Route = createFileRoute("/recommendation")({
   validateSearch: (s: Record<string, unknown>): RecSearch => ({
     id: typeof s.id === "string" ? s.id : undefined,
   }),
-  component: Recommendation,
+  component: () => (
+    <RequireAuth>
+      <Recommendation />
+    </RequireAuth>
+  ),
 });
 
 function Recommendation() {

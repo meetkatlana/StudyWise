@@ -6,8 +6,8 @@ const columns = [
     title: "Product",
     links: [
       { label: "Quiz", to: "/quiz" as const },
-      { label: "Attempt", to: "/attempt" as const },
-      { label: "Results", to: "/result" as const },
+      { label: "Dashboard", to: "/dashboard" as const },
+      { label: "Analytics", to: "/analytics" as const },
       { label: "AI Coach", to: "/recommendation" as const },
     ],
   },
@@ -15,16 +15,17 @@ const columns = [
     title: "Company",
     links: [
       { label: "About", to: "/" as const },
-      { label: "Careers", to: "/" as const },
       { label: "Contact", to: "/" as const },
+      { label: "Privacy Policy", to: "/" as const },
+      { label: "Terms", to: "/" as const },
     ],
   },
   {
     title: "Resources",
     links: [
-      { label: "Docs", to: "/" as const },
-      { label: "Blog", to: "/" as const },
-      { label: "Support", to: "/" as const },
+      { label: "Study Resources", to: "/resources" as const },
+      { label: "History", to: "/history" as const },
+      { label: "Profile", to: "/profile" as const },
     ],
   },
 ];

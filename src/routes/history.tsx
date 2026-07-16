@@ -23,9 +23,14 @@ import {
   type Difficulty,
   type Subject,
 } from "../lib/quiz-data";
+import { RequireAuth } from "../components/RequireAuth";
 
 export const Route = createFileRoute("/history")({
-  component: HistoryPage,
+  component: () => (
+    <RequireAuth requireFull>
+      <HistoryPage />
+    </RequireAuth>
+  ),
 });
 
 type SubjectFilter = "All" | Subject;
