@@ -22,6 +22,7 @@ import {
   recommendedVideos,
   splitTopics,
 } from "../lib/recommendations";
+import { RequireAuth } from "../components/RequireAuth";
 
 interface RecSearch {
   id?: string;
