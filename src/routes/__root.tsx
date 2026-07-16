@@ -14,6 +14,9 @@ import { reportLovableError } from "../lib/lovable-error-reporting";
 import { Navbar } from "../components/Navbar";
 import { Footer } from "../components/Footer";
 import { QuizProvider } from "../context/QuizContext";
+import { AuthProvider } from "../context/AuthContext";
+import { SettingsProvider } from "../context/SettingsContext";
+import { NotificationsProvider } from "../context/NotificationsContext";
 
 function NotFoundComponent() {
   return (
@@ -122,12 +125,18 @@ function RootComponent() {
 
   return (
     <QueryClientProvider client={queryClient}>
-      <QuizProvider>
-        <Navbar />
-        {/* Required: nested routes render here. Removing <Outlet /> breaks all child routes. */}
-        <Outlet />
-        <Footer />
-      </QuizProvider>
+      <SettingsProvider>
+        <AuthProvider>
+          <NotificationsProvider>
+            <QuizProvider>
+              <Navbar />
+              {/* Required: nested routes render here. */}
+              <Outlet />
+              <Footer />
+            </QuizProvider>
+          </NotificationsProvider>
+        </AuthProvider>
+      </SettingsProvider>
     </QueryClientProvider>
   );
 }
