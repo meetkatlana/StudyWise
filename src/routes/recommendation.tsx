@@ -31,7 +31,11 @@ export const Route = createFileRoute("/recommendation")({
   validateSearch: (s: Record<string, unknown>): RecSearch => ({
     id: typeof s.id === "string" ? s.id : undefined,
   }),
-  component: Recommendation,
+  component: () => (
+    <RequireAuth>
+      <Recommendation />
+    </RequireAuth>
+  ),
 });
 
 function Recommendation() {
