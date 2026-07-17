@@ -24,7 +24,7 @@ import {
 } from "../lib/achievements";
 
 export const Route = createFileRoute("/analytics")({
-  head: () => ({ meta: [{ title: "Analytics — PrepCoach.ai" }] }),
+  head: () => ({ meta: [{ title: "Analytics — StudyWise" }] }),
   component: () => (
     <RequireAuth requireFull>
       <AnalyticsPage />

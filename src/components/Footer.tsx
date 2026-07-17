@@ -1,5 +1,5 @@
 import { Link } from "@tanstack/react-router";
-import { Sparkles, Github, Twitter, Linkedin } from "lucide-react";
+import { Sparkles, Github, Linkedin } from "lucide-react";
 
 const columns = [
   {
@@ -14,10 +14,8 @@ const columns = [
   {
     title: "Company",
     links: [
-      { label: "About", to: "/" as const },
-      { label: "Contact", to: "/" as const },
-      { label: "Privacy Policy", to: "/" as const },
-      { label: "Terms", to: "/" as const },
+      { label: "About", to: "/about" as const },
+      { label: "Contact", to: "/contact" as const },
     ],
   },
   {
@@ -44,7 +42,7 @@ export function Footer() {
                 <Sparkles className="h-4.5 w-4.5" strokeWidth={2.25} />
               </span>
               <span className="font-display text-[17px] font-semibold text-foreground">
-                PrepCoach<span className="gradient-text">.ai</span>
+                StudyWise<span className="gradient-text"></span>
               </span>
             </Link>
             <p className="mt-4 max-w-sm text-sm text-muted-foreground">
@@ -53,13 +51,22 @@ export function Footer() {
             </p>
             <div className="mt-5 flex items-center gap-2">
               {[
-                { Icon: Twitter, label: "Twitter" },
-                { Icon: Github, label: "GitHub" },
-                { Icon: Linkedin, label: "LinkedIn" },
-              ].map(({ Icon, label }) => (
+                {
+                  Icon: Github,
+                  label: "GitHub",
+                  href: "https://github.com/meetkatlana",
+                },
+                {
+                  Icon: Linkedin,
+                  label: "LinkedIn",
+                  href: "https://www.linkedin.com/in/meetkatlana28/",
+                },
+              ].map(({ Icon, label, href }) => (
                 <a
                   key={label}
-                  href="#"
+                  href={href}
+                  target="_blank"
+                  rel="noopener noreferrer"
                   aria-label={label}
                   className="grid h-9 w-9 place-items-center rounded-xl border border-white/60 bg-white/70 text-muted-foreground transition-all hover:-translate-y-0.5 hover:text-primary hover:shadow-soft"
                 >
@@ -91,8 +98,18 @@ export function Footer() {
         </div>
 
         <div className="mt-12 flex flex-col items-center justify-between gap-3 border-t border-white/60 pt-6 text-xs text-muted-foreground sm:flex-row">
-          <p>© {new Date().getFullYear()} PrepCoach.ai — All rights reserved.</p>
-          <p>Built for the IBM SkillsBuild Gen AI Internship.</p>
+          <p>© 2026 StudyWise — All rights reserved.</p>
+          <p>
+            Developed by{" "}
+            <a
+              href="https://github.com/meetkatlana"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="transition-colors hover:text-primary"
+            >
+              Meet Katlana
+            </a>
+          </p>
         </div>
       </div>
     </footer>

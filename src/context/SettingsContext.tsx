@@ -26,7 +26,7 @@ const DEFAULTS: Settings = {
   defaultSubject: "Java",
 };
 
-const KEY = "prepcoach.settings.v1";
+const KEY = "StudyWise.settings.v1";
 
 interface Ctx {
   settings: Settings;

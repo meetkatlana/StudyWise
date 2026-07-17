@@ -5,7 +5,7 @@ import { SUBJECTS, type Subject } from "../lib/quiz-data";
 export const Route = createFileRoute("/resources")({
   head: () => ({
     meta: [
-      { title: "Resources — PrepCoach.ai" },
+      { title: "Resources — StudyWise" },
       { name: "description", content: "Curated study resources for placement prep." },
     ],
   }),

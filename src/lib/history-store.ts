@@ -15,8 +15,8 @@ export interface QuizAttempt {
   createdAt: string; // ISO
 }
 
-const KEY = "prepcoach.history.v1";
-const EVT = "prepcoach:history-change";
+const KEY = "StudyWise.history.v1";
+const EVT = "StudyWise:history-change";
 
 function read(): QuizAttempt[] {
   if (typeof window === "undefined") return [];

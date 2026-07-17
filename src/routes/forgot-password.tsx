@@ -6,7 +6,7 @@ import { AuthFormShell, TextField } from "../components/AuthFormShell";
 export const Route = createFileRoute("/forgot-password")({
   head: () => ({
     meta: [
-      { title: "Reset password — PrepCoach.ai" },
+      { title: "Reset password — StudyWise" },
       { name: "description", content: "Request a password reset link." },
     ],
   }),

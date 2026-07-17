@@ -3,12 +3,11 @@ import {
   ArrowRight,
   Sparkles,
   BrainCircuit,
+  Clock3,
   Target,
   Trophy,
   Check,
   BookOpen,
-  Users,
-  TrendingUp,
 } from "lucide-react";
 
 export function Hero() {
@@ -31,26 +30,17 @@ export function Hero() {
       </div>
 
       {/* HERO */}
-      <div className="mx-auto grid max-w-7xl items-center gap-14 px-4 pt-16 pb-24 sm:px-6 sm:pt-20 lg:grid-cols-[1.05fr_1fr] lg:gap-16 lg:px-8 lg:pt-28 lg:pb-32">
+      <div className="mx-auto grid max-w-7xl items-center gap-14 px-4 pt-6 pb-24 sm:px-6 sm:pt-8 lg:grid-cols-[1.05fr_1fr] lg:gap-16 lg:px-8lg:pt-10 lg:pb-20">
         {/* Copy */}
         <div className="animate-fade-up text-center lg:text-left">
-          <span className="inline-flex items-center gap-2 rounded-full glass px-3.5 py-1.5 text-xs font-medium text-foreground/80">
-            <span className="relative flex h-2 w-2">
-              <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-success opacity-75" />
-              <span className="relative inline-flex h-2 w-2 rounded-full bg-success" />
-            </span>
-            Powered by Generative AI
-          </span>
+    
 
           <h1 className="font-display mt-6 text-[2.5rem] font-bold leading-[1.05] tracking-tight text-foreground sm:text-6xl lg:text-[4.25rem]">
-            Ace placements with your{" "}
-            <span className="gradient-text">AI Prep Coach</span>
+            <span className="gradient-text">Get Placement Ready with StudyWise</span>
           </h1>
 
           <p className="mx-auto mt-6 max-w-xl text-base leading-relaxed text-muted-foreground sm:text-lg lg:mx-0">
-            Generate personalized quizzes, get instant AI explanations, and follow
-            a smart study plan tuned to your goals — everything in one calm,
-            focused workspace.
+           Practice personalized quizzes, strengthen your weak topics, and get AI-powered explanations to prepare smarter for your placements
           </p>
 
           <div className="mt-9 flex flex-col items-center gap-3 sm:flex-row sm:justify-center lg:justify-start">
@@ -187,16 +177,16 @@ export function Hero() {
               Trusted worldwide
             </p>
             <h2 className="font-display mt-3 text-3xl font-bold tracking-tight text-foreground sm:text-4xl">
-              Numbers that speak for themselves
+              Everything you need to prepare smarter
             </h2>
           </div>
 
           <dl className="mt-12 grid grid-cols-2 gap-4 sm:gap-6 lg:grid-cols-4">
             {[
-              { icon: BookOpen, k: "10k+", v: "Practice questions" },
-              { icon: Target, k: "50+", v: "Placement topics" },
-              { icon: Users, k: "25k+", v: "Students prepping" },
-              { icon: TrendingUp, k: "95%", v: "Success rate" },
+              { icon: BookOpen, k: "100+", v: "Practice Questions" },
+              { icon: Target, k: "10+", v: "Placement Topics" },
+              { icon: BrainCircuit, k: "AI-Powered", v: "Explanations" },
+              { icon: Clock3, k: "24/7", v: "Practice Anytime" },
             ].map((s, i) => (
               <div
                 key={s.v}

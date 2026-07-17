@@ -7,7 +7,7 @@ import { useHistory } from "../lib/history-store";
 import { averageAccuracy, computeAchievements } from "../lib/achievements";
 
 export const Route = createFileRoute("/profile")({
-  head: () => ({ meta: [{ title: "Profile — PrepCoach.ai" }] }),
+  head: () => ({ meta: [{ title: "Profile — StudyWise" }] }),
   component: () => (
     <RequireAuth requireFull>
       <ProfilePage />

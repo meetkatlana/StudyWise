@@ -26,7 +26,7 @@ export function AuthFormShell({
                 <Sparkles className="h-4.5 w-4.5" strokeWidth={2.25} />
               </span>
               <span className="font-display text-[17px] font-semibold text-foreground">
-                PrepCoach<span className="gradient-text">.ai</span>
+                StudyWise<span className="gradient-text"></span>
               </span>
             </Link>
             <h1 className="font-display text-2xl font-bold text-foreground">

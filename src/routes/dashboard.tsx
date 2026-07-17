@@ -19,7 +19,7 @@ import {
 import { RequireAuth } from "../components/RequireAuth";
 
 export const Route = createFileRoute("/dashboard")({
-  head: () => ({ meta: [{ title: "Dashboard — PrepCoach.ai" }] }),
+  head: () => ({ meta: [{ title: "Dashboard — StudyWise" }] }),
   component: () => (
     <RequireAuth requireFull>
       <DashboardPage />

@@ -40,8 +40,8 @@ interface AuthContextValue {
 
 const AuthContext = createContext<AuthContextValue | null>(null);
 
-const USER_KEY = "prepcoach.user.v1";
-const ACCOUNTS_KEY = "prepcoach.accounts.v1";
+const USER_KEY = "StudyWise.user.v1";
+const ACCOUNTS_KEY = "StudyWise.accounts.v1";
 
 function readAccounts(): StoredAccount[] {
   if (typeof window === "undefined") return [];
@@ -117,7 +117,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     persist({
       id: "guest",
       name: "Guest",
-      email: "guest@prepcoach.ai",
+      email: "guest@StudyWise",
       memberSince: new Date().toISOString(),
       isGuest: true,
     });

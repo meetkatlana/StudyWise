@@ -6,8 +6,8 @@ import { useAuth } from "../context/AuthContext";
 export const Route = createFileRoute("/signup")({
   head: () => ({
     meta: [
-      { title: "Sign up — PrepCoach.ai" },
-      { name: "description", content: "Create your PrepCoach.ai account." },
+      { title: "Sign up — StudyWise" },
+      { name: "description", content: "Create your StudyWise account." },
     ],
   }),
   component: SignupPage,

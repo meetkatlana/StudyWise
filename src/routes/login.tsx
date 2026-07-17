@@ -7,8 +7,8 @@ import { useAuth } from "../context/AuthContext";
 export const Route = createFileRoute("/login")({
   head: () => ({
     meta: [
-      { title: "Log in — PrepCoach.ai" },
-      { name: "description", content: "Sign in to your PrepCoach account." },
+      { title: "Log in — StudyWise" },
+      { name: "description", content: "Sign in to your StudyWise account." },
     ],
   }),
   validateSearch: (s: Record<string, unknown>) => ({

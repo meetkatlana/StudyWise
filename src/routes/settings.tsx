@@ -6,7 +6,7 @@ import { useSettings } from "../context/SettingsContext";
 import { DIFFICULTIES, SUBJECTS } from "../lib/quiz-data";
 
 export const Route = createFileRoute("/settings")({
-  head: () => ({ meta: [{ title: "Settings — PrepCoach.ai" }] }),
+  head: () => ({ meta: [{ title: "Settings — StudyWise" }] }),
   component: () => (
     <RequireAuth requireFull>
       <SettingsPage />

@@ -17,7 +17,7 @@ export interface AppNotification {
   read: boolean;
 }
 
-const KEY = "prepcoach.notifications.v1";
+const KEY = "StudyWise.notifications.v1";
 
 function read(): AppNotification[] {
   if (typeof window === "undefined") return [];
@@ -44,7 +44,7 @@ const NotificationsContext = createContext<Ctx | null>(null);
 const SEED: AppNotification[] = [
   {
     id: "seed_1",
-    title: "Welcome to PrepCoach.ai",
+    title: "Welcome to StudyWise",
     message: "Take your first quiz to unlock personalized recommendations.",
     type: "reminder",
     createdAt: new Date().toISOString(),
