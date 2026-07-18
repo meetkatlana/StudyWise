@@ -48,4 +48,37 @@ const deleteUser = async (id) => {
   await query(`DELETE FROM users WHERE id = $1`, [id]);
 };
 
-module.exports = { createUser, findByEmail, findById, updateProfile, deleteUser };
+const getSettings = async (id) => {
+  const { rows } = await query(
+    `SELECT settings FROM users WHERE id = $1 LIMIT 1`,
+    [id]
+  );
+  return rows[0]?.settings ?? {};
+};
+
+const updateSettings = async (id, settings) => {
+  const { rows } = await query(
+    `UPDATE users SET settings = $2::jsonb WHERE id = $1 RETURNING settings`,
+    [id, JSON.stringify(settings ?? {})]
+  );
+  return rows[0]?.settings ?? {};
+};
+
+const updateEmail = async (id, email) => {
+  const { rows } = await query(
+    `UPDATE users SET email = LOWER($2) WHERE id = $1 RETURNING ${PUBLIC_COLS}`,
+    [id, email]
+  );
+  return rows[0] || null;
+};
+
+module.exports = {
+  createUser,
+  findByEmail,
+  findById,
+  updateProfile,
+  updateEmail,
+  deleteUser,
+  getSettings,
+  updateSettings,
+};
