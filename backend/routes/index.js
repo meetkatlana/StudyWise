@@ -10,6 +10,7 @@ const attemptRoutes   = require("./attemptRoutes");
 const historyRoutes   = require("./historyRoutes");
 const dashboardRoutes = require("./dashboardRoutes");
 const aiRoutes        = require("./aiRoutes");
+const settingsRoutes  = require("./settingsRoutes");
 
 const router = express.Router();
 
@@ -20,5 +21,6 @@ router.use("/attempts",  attemptRoutes);
 router.use("/history",   historyRoutes);
 router.use("/dashboard", dashboardRoutes);
 router.use("/ai",        aiRoutes);
+router.use("/settings",  settingsRoutes);
 
 module.exports = router;
