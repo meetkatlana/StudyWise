@@ -26,6 +26,20 @@ GET /api/health
 → { "status": "ok", "database": "connected", "server": "running" }
 ```
 
+## Database schema
+
+Apply the schema (one-time, on a fresh Postgres DB):
+
+```bash
+psql "$DATABASE_URL" -f db/schema.sql
+# or with individual vars:
+psql -h $PGHOST -U $PGUSER -d $PGDATABASE -f db/schema.sql
+```
+
+Tables: `users`, `quizzes`, `questions`, `quiz_attempts`, `answers`,
+`recommendations`. All PKs are UUID (`gen_random_uuid()` via `pgcrypto`).
+Indexes and foreign keys are defined in `db/schema.sql`.
+
 ## Folder structure
 
 ```
