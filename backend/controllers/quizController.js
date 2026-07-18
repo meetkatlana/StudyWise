@@ -51,6 +51,41 @@ const submitAttempt = asyncHandler(async (req, res) => {
   res.status(201).json({ status: "ok", ...result });
 });
 
+// POST /api/attempts/snapshot   (auth required)
+// Persist a client-generated quiz (no server-side quiz row required).
+const submitSnapshotAttempt = asyncHandler(async (req, res) => {
+  const { subject, difficulty, questions, answers, timeTakenSec } = req.body || {};
+  const attempt = await service.submitSnapshotAttempt({
+    userId: req.user.id,
+    subject,
+    difficulty,
+    questions,
+    answers,
+    timeTakenSec,
+  });
+  res.status(201).json({ status: "ok", attempt });
+});
+
+// GET /api/attempts/:id   (auth required)
+const getAttempt = asyncHandler(async (req, res) => {
+  const attempt = await service.getAttemptForUser(req.user.id, req.params.id);
+  if (!attempt) return res.status(404).json({ status: "error", message: "Attempt not found" });
+  res.status(200).json({ status: "ok", attempt });
+});
+
+// DELETE /api/attempts/:id   (auth required)
+const deleteAttempt = asyncHandler(async (req, res) => {
+  const ok = await service.deleteAttempt(req.user.id, req.params.id);
+  if (!ok) return res.status(404).json({ status: "error", message: "Attempt not found" });
+  res.status(204).send();
+});
+
+// DELETE /api/history   (auth required)
+const clearHistory = asyncHandler(async (req, res) => {
+  const removed = await service.clearHistory(req.user.id);
+  res.status(200).json({ status: "ok", removed });
+});
+
 // GET /api/history   (auth required)
 const getHistory = asyncHandler(async (req, res) => {
   const { limit, offset } = req.query;
@@ -72,6 +107,10 @@ module.exports = {
   getQuiz,
   createQuiz,
   submitAttempt,
+  submitSnapshotAttempt,
+  getAttempt,
+  deleteAttempt,
+  clearHistory,
   getHistory,
   getDashboard,
 };
