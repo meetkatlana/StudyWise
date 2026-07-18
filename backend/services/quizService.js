@@ -190,6 +190,77 @@ const getAttemptForUser = async (userId, attemptId) => {
   return toAttemptDTO(row);
 };
 
+/**
+ * Build a full review payload for a single attempt.
+ * Supports both snapshot attempts (client-generated) and server quiz attempts.
+ */
+const getAttemptReview = async (userId, attemptId) => {
+  const row = await attemptModel.getAttemptById(attemptId);
+  if (!row || row.user_id !== userId) return null;
+
+  const dto = toAttemptDTO(row);
+
+  // Snapshot case: questions + answers already embedded on the attempt row.
+  let questions = [];
+  if (Array.isArray(row.questions_snapshot) && row.questions_snapshot.length) {
+    const answers = Array.isArray(row.answers_snapshot) ? row.answers_snapshot : [];
+    questions = row.questions_snapshot.map((q, i) => {
+      const selected = answers[i] ?? null;
+      const correctIndex =
+        typeof q.correctIndex === "number" ? q.correctIndex : null;
+      return {
+        index: i,
+        id: q.id ?? `q-${i}`,
+        question: q.question ?? q.question_text ?? "",
+        options: Array.isArray(q.options) ? q.options : [],
+        topic: q.topic ?? null,
+        selectedAnswer: selected,
+        correctAnswer: correctIndex,
+        isCorrect: selected !== null && selected === correctIndex,
+        explanation: q.explanation ?? "",
+      };
+    });
+  } else {
+    // Server-quiz case: pull answers joined with questions.
+    const rows = await answerModel.getAnswersByAttempt(attemptId);
+    questions = rows.map((r, i) => {
+      const selectedRaw =
+        typeof r.selected_answer === "string"
+          ? safeJson(r.selected_answer)
+          : r.selected_answer;
+      return {
+        index: i,
+        id: r.question_id,
+        question: r.question_text,
+        options: Array.isArray(r.options) ? r.options : [],
+        topic: r.topic ?? null,
+        selectedAnswer: selectedRaw ?? null,
+        correctAnswer: r.correct_answer ?? null,
+        isCorrect: !!r.is_correct,
+        explanation: r.explanation ?? "",
+      };
+    });
+  }
+
+  return {
+    attemptId: dto.id,
+    subject: dto.subject,
+    difficulty: dto.difficulty,
+    score: Number(row.score ?? dto.accuracy) || 0,
+    correctCount: dto.correctCount,
+    wrongCount: dto.wrongCount,
+    totalQuestions: dto.count,
+    accuracy: dto.accuracy,
+    timeTaken: dto.timeTakenSec,
+    completionDate: dto.createdAt,
+    questions,
+  };
+};
+
+const safeJson = (s) => {
+  try { return JSON.parse(s); } catch { return s; }
+};
+
 const deleteAttempt = (userId, attemptId) =>
   attemptModel.deleteAttempt(attemptId, userId);
 
@@ -239,6 +310,7 @@ module.exports = {
   submitSnapshotAttempt,
   getHistory,
   getAttemptForUser,
+  getAttemptReview,
   deleteAttempt,
   clearHistory,
   getDashboard,

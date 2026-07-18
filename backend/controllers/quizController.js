@@ -73,6 +73,13 @@ const getAttempt = asyncHandler(async (req, res) => {
   res.status(200).json({ status: "ok", attempt });
 });
 
+// GET /api/attempts/:id/review   (auth required)
+const getAttemptReview = asyncHandler(async (req, res) => {
+  const review = await service.getAttemptReview(req.user.id, req.params.id);
+  if (!review) return res.status(404).json({ status: "error", message: "Attempt not found" });
+  res.status(200).json({ status: "ok", review });
+});
+
 // DELETE /api/attempts/:id   (auth required)
 const deleteAttempt = asyncHandler(async (req, res) => {
   const ok = await service.deleteAttempt(req.user.id, req.params.id);
@@ -109,6 +116,7 @@ module.exports = {
   submitAttempt,
   submitSnapshotAttempt,
   getAttempt,
+  getAttemptReview,
   deleteAttempt,
   clearHistory,
   getHistory,

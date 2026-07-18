@@ -26,6 +26,7 @@ import { Route as AttemptRouteImport } from './routes/attempt'
 import { Route as AnalyticsRouteImport } from './routes/analytics'
 import { Route as AboutRouteImport } from './routes/about'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as ReviewAttemptIdRouteImport } from './routes/review.$attemptId'
 
 const SignupRoute = SignupRouteImport.update({
   id: '/signup',
@@ -112,6 +113,11 @@ const IndexRoute = IndexRouteImport.update({
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ReviewAttemptIdRoute = ReviewAttemptIdRouteImport.update({
+  id: '/$attemptId',
+  path: '/$attemptId',
+  getParentRoute: () => ReviewRoute,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -128,9 +134,10 @@ export interface FileRoutesByFullPath {
   '/recommendation': typeof RecommendationRoute
   '/resources': typeof ResourcesRoute
   '/result': typeof ResultRoute
-  '/review': typeof ReviewRoute
+  '/review': typeof ReviewRouteWithChildren
   '/settings': typeof SettingsRoute
   '/signup': typeof SignupRoute
+  '/review/$attemptId': typeof ReviewAttemptIdRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -147,9 +154,10 @@ export interface FileRoutesByTo {
   '/recommendation': typeof RecommendationRoute
   '/resources': typeof ResourcesRoute
   '/result': typeof ResultRoute
-  '/review': typeof ReviewRoute
+  '/review': typeof ReviewRouteWithChildren
   '/settings': typeof SettingsRoute
   '/signup': typeof SignupRoute
+  '/review/$attemptId': typeof ReviewAttemptIdRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -167,9 +175,10 @@ export interface FileRoutesById {
   '/recommendation': typeof RecommendationRoute
   '/resources': typeof ResourcesRoute
   '/result': typeof ResultRoute
-  '/review': typeof ReviewRoute
+  '/review': typeof ReviewRouteWithChildren
   '/settings': typeof SettingsRoute
   '/signup': typeof SignupRoute
+  '/review/$attemptId': typeof ReviewAttemptIdRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -191,6 +200,7 @@ export interface FileRouteTypes {
     | '/review'
     | '/settings'
     | '/signup'
+    | '/review/$attemptId'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -210,6 +220,7 @@ export interface FileRouteTypes {
     | '/review'
     | '/settings'
     | '/signup'
+    | '/review/$attemptId'
   id:
     | '__root__'
     | '/'
@@ -229,6 +240,7 @@ export interface FileRouteTypes {
     | '/review'
     | '/settings'
     | '/signup'
+    | '/review/$attemptId'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -246,7 +258,7 @@ export interface RootRouteChildren {
   RecommendationRoute: typeof RecommendationRoute
   ResourcesRoute: typeof ResourcesRoute
   ResultRoute: typeof ResultRoute
-  ReviewRoute: typeof ReviewRoute
+  ReviewRoute: typeof ReviewRouteWithChildren
   SettingsRoute: typeof SettingsRoute
   SignupRoute: typeof SignupRoute
 }
@@ -372,8 +384,26 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/review/$attemptId': {
+      id: '/review/$attemptId'
+      path: '/$attemptId'
+      fullPath: '/review/$attemptId'
+      preLoaderRoute: typeof ReviewAttemptIdRouteImport
+      parentRoute: typeof ReviewRoute
+    }
   }
 }
+
+interface ReviewRouteChildren {
+  ReviewAttemptIdRoute: typeof ReviewAttemptIdRoute
+}
+
+const ReviewRouteChildren: ReviewRouteChildren = {
+  ReviewAttemptIdRoute: ReviewAttemptIdRoute,
+}
+
+const ReviewRouteWithChildren =
+  ReviewRoute._addFileChildren(ReviewRouteChildren)
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
@@ -390,20 +420,10 @@ const rootRouteChildren: RootRouteChildren = {
   RecommendationRoute: RecommendationRoute,
   ResourcesRoute: ResourcesRoute,
   ResultRoute: ResultRoute,
-  ReviewRoute: ReviewRoute,
+  ReviewRoute: ReviewRouteWithChildren,
   SettingsRoute: SettingsRoute,
   SignupRoute: SignupRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
-
-import type { getRouter } from './router.tsx'
-import type { startInstance } from './start.ts'
-declare module '@tanstack/react-start' {
-  interface Register {
-    ssr: true
-    router: Awaited<ReturnType<typeof getRouter>>
-    config: Awaited<ReturnType<typeof startInstance.getOptions>>
-  }
-}
