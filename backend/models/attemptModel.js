@@ -29,6 +29,8 @@ const insertSnapshotAttempt = async ({
   questionsSnapshot,
   answersSnapshot,
 }) => {
+  console.log("Subject:", subject);
+console.log("Difficulty:", difficulty);
   const { rows } = await query(
     `INSERT INTO quiz_attempts (
        user_id, quiz_id, subject, difficulty,

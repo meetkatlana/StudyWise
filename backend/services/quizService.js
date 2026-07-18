@@ -133,20 +133,21 @@ const submitSnapshotAttempt = async ({
     }
   }
   const total = questions.length;
-  const score = total > 0 ? +((correct / total) * 100).toFixed(2) : 0;
+const score = total > 0 ? +((correct / total) * 100).toFixed(2) : 0;
 
-  const row = await attemptModel.insertSnapshotAttempt({
-    userId,
-    subject,
-    difficulty,
-    totalCount: total,
-    correctCount: correct,
-    score,
-    timeTakenSec,
-    questionsSnapshot: questions,
-    answersSnapshot: answers,
-  });
-  return toAttemptDTO(row);
+const row = await attemptModel.insertSnapshotAttempt({
+  userId,
+  subject,
+  difficulty: difficulty.toLowerCase(),
+  totalCount: total,
+  correctCount: correct,
+  score,
+  timeTakenSec,
+  questionsSnapshot: questions,
+  answersSnapshot: answers,
+});
+
+return toAttemptDTO(row);
 };
 
 // ---------- History / dashboard ----------

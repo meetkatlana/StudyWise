@@ -18,6 +18,14 @@ const pool = new Pool(
         ssl: env.db.ssl,
       }
 );
+(async () => {
+  try {
+    const result = await pool.query("SELECT current_database()");
+    console.log("Current Database:", result.rows[0].current_database);
+  } catch (err) {
+    console.error(err);
+  }
+})();
 
 pool.on("error", (err) => {
   // Prevents the process from crashing on idle client errors.
