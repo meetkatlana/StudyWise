@@ -1,6 +1,6 @@
 import { createFileRoute, Link, useNavigate, useSearch } from "@tanstack/react-router";
 import { useState } from "react";
-import { Github, Chrome, User } from "lucide-react";
+import { Github, Chrome } from "lucide-react";
 import { AuthFormShell, TextField } from "../components/AuthFormShell";
 import { useAuth } from "../context/AuthContext";
 
@@ -18,7 +18,7 @@ export const Route = createFileRoute("/login")({
 });
 
 function LoginPage() {
-  const { login, loginAsGuest } = useAuth();
+  const { login } = useAuth();
   const navigate = useNavigate();
   const search = useSearch({ from: "/login" });
   const [email, setEmail] = useState("");
@@ -117,18 +117,6 @@ function LoginPage() {
           <SocialBtn icon={<Chrome className="h-4 w-4" />} label="Google" />
           <SocialBtn icon={<Github className="h-4 w-4" />} label="GitHub" />
         </div>
-
-        <button
-          type="button"
-          onClick={() => {
-            loginAsGuest();
-            next();
-          }}
-          className="flex w-full items-center justify-center gap-2 rounded-full border border-white/60 bg-white/60 px-4 py-2.5 text-sm font-semibold text-foreground shadow-soft transition-colors hover:bg-white"
-        >
-          <User className="h-4 w-4" />
-          Continue as guest
-        </button>
       </form>
     </AuthFormShell>
   );
