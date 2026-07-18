@@ -40,6 +40,48 @@ Tables: `users`, `quizzes`, `questions`, `quiz_attempts`, `answers`,
 `recommendations`. All PKs are UUID (`gen_random_uuid()` via `pgcrypto`).
 Indexes and foreign keys are defined in `db/schema.sql`.
 
+Additional migrations:
+
+```bash
+psql "$DATABASE_URL" -f db/migrations/002_refresh_tokens.sql
+```
+
+## Auth API
+
+| Method | Endpoint             | Auth | Description                          |
+| ------ | -------------------- | ---- | ------------------------------------ |
+| POST   | `/api/auth/signup`   |  –   | `{ name, email, password }` → tokens |
+| POST   | `/api/auth/login`    |  –   | `{ email, password }` → tokens       |
+| POST   | `/api/auth/refresh`  |  –   | `{ refreshToken }` → new tokens (rotated) |
+| POST   | `/api/auth/logout`   |  –   | `{ refreshToken? }` → 204            |
+| GET    | `/api/auth/me`       | JWT  | Current user profile                 |
+
+Response shape for signup/login/refresh:
+
+```json
+{
+  "status": "ok",
+  "user": { "id": "...", "name": "...", "email": "...", "role": "user" },
+  "accessToken": "<jwt>",
+  "refreshToken": "<opaque>",
+  "tokenType": "Bearer",
+  "expiresIn": "15m"
+}
+```
+
+Protect any route with the JWT middleware:
+
+```js
+const { requireAuth, requireRole } = require("./middleware/authMiddleware");
+router.get("/private",       requireAuth,               handler);
+router.get("/admin/metrics", requireAuth, requireRole("admin"), handler);
+```
+
+HTTP status codes used:
+`200` OK · `201` Created · `204` No Content ·
+`400` Validation · `401` Unauthenticated · `403` Forbidden ·
+`404` Not Found · `409` Conflict · `500` Server Error.
+
 ## Folder structure
 
 ```
