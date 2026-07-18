@@ -8,6 +8,7 @@ import {
   type ReactNode,
 } from "react";
 import { api, ApiError, tokenStore } from "../lib/api";
+import { invalidateHistory } from "../lib/history-store";
 
 export interface User {
   id: string;
@@ -85,6 +86,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const applyAuth = useCallback((payload: AuthPayload) => {
     tokenStore.set(payload.accessToken, payload.refreshToken);
     setUser(toUser(payload.user));
+    invalidateHistory();
   }, []);
 
   const login: AuthContextValue["login"] = async (email, password) => {
@@ -118,6 +120,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
     tokenStore.clear();
     setUser(null);
+    invalidateHistory();
   };
 
   const updateProfile: AuthContextValue["updateProfile"] = async (patch) => {
