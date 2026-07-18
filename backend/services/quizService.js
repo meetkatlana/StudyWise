@@ -103,8 +103,96 @@ const submitAttempt = async ({ userId, quizId, timeTakenSec = 0, answers = [] })
   return { attempt: completed, score, correct, total };
 };
 
+/**
+ * Persist a client-generated (snapshot) attempt — no server-side quiz row.
+ * Body from the frontend already contains the questions, chosen answers,
+ * and derived stats. Trust the server to re-derive counts to avoid tampering.
+ */
+const submitSnapshotAttempt = async ({
+  userId,
+  subject,
+  difficulty,
+  questions = [],
+  answers = [],
+  timeTakenSec = 0,
+}) => {
+  if (!subject || !difficulty) {
+    throw new ApiError(400, "subject and difficulty are required");
+  }
+  if (!Array.isArray(questions) || questions.length === 0) {
+    throw new ApiError(400, "questions must be a non-empty array");
+  }
+  if (!Array.isArray(answers) || answers.length !== questions.length) {
+    throw new ApiError(400, "answers length must match questions length");
+  }
+
+  let correct = 0;
+  for (let i = 0; i < questions.length; i += 1) {
+    if (answers[i] !== null && answers[i] === questions[i]?.correctIndex) {
+      correct += 1;
+    }
+  }
+  const total = questions.length;
+  const score = total > 0 ? +((correct / total) * 100).toFixed(2) : 0;
+
+  const row = await attemptModel.insertSnapshotAttempt({
+    userId,
+    subject,
+    difficulty,
+    totalCount: total,
+    correctCount: correct,
+    score,
+    timeTakenSec,
+    questionsSnapshot: questions,
+    answersSnapshot: answers,
+  });
+  return toAttemptDTO(row);
+};
+
 // ---------- History / dashboard ----------
-const getHistory = (userId, opts) => attemptModel.listAttemptsByUser(userId, opts);
+/**
+ * Map a DB row into the shape the frontend consumes (matches the previous
+ * localStorage-backed QuizAttempt object 1:1).
+ */
+const toAttemptDTO = (row) => {
+  if (!row) return null;
+  const answers    = Array.isArray(row.answers_snapshot)   ? row.answers_snapshot   : [];
+  const questions  = Array.isArray(row.questions_snapshot) ? row.questions_snapshot : [];
+  const total      = row.total_count ?? questions.length;
+  const correct    = row.correct_count ?? 0;
+  const answered   = answers.filter((a) => a !== null && a !== undefined).length;
+  const accuracy   = total > 0 ? Math.round((correct / total) * 100) : 0;
+  return {
+    id: row.id,
+    subject: row.subject || row.quiz_subject || "Unknown",
+    difficulty: row.difficulty || "Medium",
+    count: total,
+    questions,
+    answers,
+    correctCount: correct,
+    wrongCount: Math.max(0, answered - correct),
+    accuracy,
+    timeTakenSec: row.time_taken_sec || 0,
+    createdAt: (row.completed_at || row.created_at)?.toISOString?.() ??
+               row.completed_at ?? row.created_at,
+  };
+};
+
+const getHistory = async (userId, opts) => {
+  const rows = await attemptModel.listAttemptsByUser(userId, opts);
+  return rows.map(toAttemptDTO);
+};
+
+const getAttemptForUser = async (userId, attemptId) => {
+  const row = await attemptModel.getAttemptById(attemptId);
+  if (!row || row.user_id !== userId) return null;
+  return toAttemptDTO(row);
+};
+
+const deleteAttempt = (userId, attemptId) =>
+  attemptModel.deleteAttempt(attemptId, userId);
+
+const clearHistory = (userId) => attemptModel.deleteAllForUser(userId);
 
 const getDashboard = async (userId) => {
   const attempts = await attemptModel.listAttemptsByUser(userId, { limit: 200 });
@@ -138,7 +226,7 @@ const getDashboard = async (userId) => {
   return {
     totals: { totalAttempts, avgScore, bestScore, totalTimeSec },
     subjects,
-    recent: completed.slice(0, 5),
+    recent: completed.slice(0, 5).map(toAttemptDTO),
   };
 };
 
@@ -147,6 +235,10 @@ module.exports = {
   getQuizWithQuestions,
   createQuizWithQuestions,
   submitAttempt,
+  submitSnapshotAttempt,
   getHistory,
+  getAttemptForUser,
+  deleteAttempt,
+  clearHistory,
   getDashboard,
 };
