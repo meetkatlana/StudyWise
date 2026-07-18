@@ -42,6 +42,11 @@ const env = {
   bcrypt: {
     saltRounds: parseInt(process.env.BCRYPT_SALT_ROUNDS || "10", 10),
   },
+
+  openai: {
+    apiKey: process.env.OPENAI_API_KEY || "",
+    model:  process.env.OPENAI_MODEL || "gpt-4o-mini",
+  },
 };
 
 module.exports = env;
