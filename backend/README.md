@@ -82,6 +82,56 @@ HTTP status codes used:
 `400` Validation · `401` Unauthenticated · `403` Forbidden ·
 `404` Not Found · `409` Conflict · `500` Server Error.
 
+## Quiz API
+
+| Method | Endpoint                  | Auth | Description                                   |
+| ------ | ------------------------- | ---- | --------------------------------------------- |
+| GET    | `/api/quizzes`            |  –   | List published quizzes (`?subject&difficulty&limit&offset`) |
+| GET    | `/api/quizzes/:id`        |  –   | Quiz + questions (correct answers hidden)     |
+| POST   | `/api/quizzes`            | JWT  | Create quiz + questions in one call           |
+| POST   | `/api/attempts`           | JWT  | Submit a full attempt; scored server-side     |
+| GET    | `/api/history`            | JWT  | Current user's attempts                       |
+| GET    | `/api/dashboard`          | JWT  | Aggregate stats per user & per subject        |
+
+`POST /api/quizzes` body:
+```json
+{
+  "title": "DSA Basics",
+  "subject": "DSA",
+  "difficulty": "medium",
+  "durationMin": 15,
+  "questions": [
+    { "questionText": "...", "options": ["A","B","C","D"],
+      "correctAnswer": "B", "explanation": "...", "topic": "Arrays", "marks": 1 }
+  ]
+}
+```
+
+`POST /api/attempts` body:
+```json
+{
+  "quizId": "uuid",
+  "timeTakenSec": 540,
+  "answers": [
+    { "questionId": "uuid", "selectedAnswer": "B", "timeTakenSec": 20 }
+  ]
+}
+```
+
+## AI API (OpenAI)
+
+Set `OPENAI_API_KEY` in `.env` (never commit). Optionally set `OPENAI_MODEL`
+(default `gpt-4o-mini`). All AI endpoints require JWT.
+
+| Method | Endpoint                | Description                                  |
+| ------ | ----------------------- | -------------------------------------------- |
+| POST   | `/api/ai/generate-quiz` | `{ subject, difficulty?, count?, topic? }` → questions[] |
+| POST   | `/api/ai/explain`       | `{ questionText, options, correctAnswer, selectedAnswer }` |
+| POST   | `/api/ai/recommend`     | `{ subject, weakTopics?, score? }` → focus / roadmap / resources |
+
+If `OPENAI_API_KEY` is missing the AI endpoints return `503`. The key is
+read only server-side via `config/env.js` — never exposed to clients.
+
 ## Folder structure
 
 ```

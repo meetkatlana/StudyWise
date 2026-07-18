@@ -5,10 +5,20 @@
 const express = require("express");
 const healthRoutes = require("./healthRoutes");
 const authRoutes = require("./authRoutes");
+const quizRoutes      = require("./quizRoutes");
+const attemptRoutes   = require("./attemptRoutes");
+const historyRoutes   = require("./historyRoutes");
+const dashboardRoutes = require("./dashboardRoutes");
+const aiRoutes        = require("./aiRoutes");
 
 const router = express.Router();
 
 router.use("/health", healthRoutes);
 router.use("/auth",   authRoutes);
+router.use("/quizzes",   quizRoutes);
+router.use("/attempts",  attemptRoutes);
+router.use("/history",   historyRoutes);
+router.use("/dashboard", dashboardRoutes);
+router.use("/ai",        aiRoutes);
 
 module.exports = router;
