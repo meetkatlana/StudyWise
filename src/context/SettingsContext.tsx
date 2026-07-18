@@ -3,10 +3,12 @@ import {
   useContext,
   useEffect,
   useMemo,
+  useRef,
   useState,
   type ReactNode,
 } from "react";
 import type { Difficulty, Subject } from "../lib/quiz-data";
+import { api, tokenStore } from "../lib/api";
 
 export interface Settings {
   theme: "light" | "dark";
@@ -26,7 +28,6 @@ const DEFAULTS: Settings = {
   defaultSubject: "Java",
 };
 
-const KEY = "StudyWise.settings.v1";
 
 interface Ctx {
   settings: Settings;
@@ -40,21 +41,48 @@ const SettingsContext = createContext<Ctx | null>(null);
 export function SettingsProvider({ children }: { children: ReactNode }) {
   const [settings, setSettings] = useState<Settings>(DEFAULTS);
   const [hydrated, setHydrated] = useState(false);
+  const skipNextSave = useRef(true);
 
+  // Load settings from the backend on mount when a session exists.
   useEffect(() => {
-    try {
-      const raw = localStorage.getItem(KEY);
-      if (raw) setSettings({ ...DEFAULTS, ...JSON.parse(raw) });
-    } catch {}
-    setHydrated(true);
+    let cancelled = false;
+    (async () => {
+      if (!tokenStore.access) {
+        setHydrated(true);
+        return;
+      }
+      try {
+        const res = await api<{ status: string; settings: Partial<Settings> }>(
+          "/settings",
+        );
+        if (!cancelled && res.settings) {
+          setSettings({ ...DEFAULTS, ...res.settings });
+        }
+      } catch {
+        /* fall back to defaults */
+      } finally {
+        if (!cancelled) setHydrated(true);
+      }
+    })();
+    return () => { cancelled = true; };
   }, []);
 
+  // Persist to backend on change (debounced by React batching). Apply theme
+  // side effect either way.
   useEffect(() => {
-    if (!hydrated) return;
-    localStorage.setItem(KEY, JSON.stringify(settings));
     const root = document.documentElement;
     if (settings.theme === "dark") root.classList.add("dark");
     else root.classList.remove("dark");
+
+    if (!hydrated) return;
+    if (skipNextSave.current) {
+      skipNextSave.current = false;
+      return;
+    }
+    if (!tokenStore.access) return;
+    api("/settings", { method: "PUT", body: { settings } }).catch(() => {
+      /* ignore transient save failures */
+    });
   }, [settings, hydrated]);
 
   const value = useMemo<Ctx>(

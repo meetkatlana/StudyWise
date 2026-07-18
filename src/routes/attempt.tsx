@@ -76,26 +76,29 @@ function Attempt() {
   const isLast = idx === questions.length - 1;
   const progress = ((idx + 1) / questions.length) * 100;
 
-  const handleSubmit = () => {
+  const handleSubmit = async () => {
     submitQuiz(elapsed);
     if (!subject || !difficulty) {
       navigate({ to: "/quiz" });
       return;
     }
-    // Persist this attempt to localStorage so it appears in History
-    // and so Result/Review/Recommendation can look it up by id.
-    const saved = addAttempt({
-      subject,
-      difficulty,
-      count: count ?? questions.length,
-      questions,
-      answers,
-      correctCount,
-      wrongCount,
-      accuracy,
-      timeTakenSec: elapsed,
-    });
-    navigate({ to: "/result", search: { id: saved.id } });
+    try {
+      const saved = await addAttempt({
+        subject,
+        difficulty,
+        count: count ?? questions.length,
+        questions,
+        answers,
+        correctCount,
+        wrongCount,
+        accuracy,
+        timeTakenSec: elapsed,
+      });
+      navigate({ to: "/result", search: { id: saved.id } });
+    } catch (e) {
+      console.error("Failed to save attempt", e);
+      navigate({ to: "/dashboard" });
+    }
   };
 
   return (

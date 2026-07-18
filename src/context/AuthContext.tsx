@@ -7,6 +7,8 @@ import {
   useState,
   type ReactNode,
 } from "react";
+import { api, ApiError, tokenStore } from "../lib/api";
+import { invalidateHistory } from "../lib/history-store";
 
 export interface User {
   id: string;
@@ -14,129 +16,119 @@ export interface User {
   email: string;
   avatar?: string;
   memberSince: string; // ISO
-  isGuest: boolean;
-}
-
-interface StoredAccount {
-  id: string;
-  name: string;
-  email: string;
-  password: string;
-  avatar?: string;
-  memberSince: string;
 }
 
 interface AuthContextValue {
   user: User | null;
   hydrated: boolean;
   isAuthenticated: boolean;
-  isGuest: boolean;
+  isGuest: boolean; // kept for compatibility; always false now.
   login: (email: string, password: string) => Promise<void>;
   signup: (name: string, email: string, password: string) => Promise<void>;
-  loginAsGuest: () => void;
-  logout: () => void;
-  updateProfile: (patch: Partial<Pick<User, "name" | "email" | "avatar">>) => void;
+  logout: () => Promise<void>;
+  updateProfile: (
+    patch: Partial<Pick<User, "name" | "email" | "avatar">>,
+  ) => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextValue | null>(null);
 
-const USER_KEY = "StudyWise.user.v1";
-const ACCOUNTS_KEY = "StudyWise.accounts.v1";
-
-function readAccounts(): StoredAccount[] {
-  if (typeof window === "undefined") return [];
-  try {
-    return JSON.parse(localStorage.getItem(ACCOUNTS_KEY) ?? "[]");
-  } catch {
-    return [];
-  }
+interface ApiUser {
+  id: string;
+  name: string;
+  email: string;
+  avatar_url?: string | null;
+  created_at: string;
 }
-function writeAccounts(list: StoredAccount[]) {
-  localStorage.setItem(ACCOUNTS_KEY, JSON.stringify(list));
+
+interface AuthPayload {
+  status: string;
+  user: ApiUser;
+  accessToken: string;
+  refreshToken: string;
+}
+
+function toUser(u: ApiUser): User {
+  return {
+    id: u.id,
+    name: u.name,
+    email: u.email,
+    avatar: u.avatar_url ?? undefined,
+    memberSince: u.created_at,
+  };
 }
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [hydrated, setHydrated] = useState(false);
 
+  // On mount, if we have a stored access token, restore the session by
+  // calling /auth/me. On 401 (expired/invalid) the tokens are cleared.
   useEffect(() => {
-    try {
-      const raw = localStorage.getItem(USER_KEY);
-      if (raw) setUser(JSON.parse(raw));
-    } catch {}
-    setHydrated(true);
+    let cancelled = false;
+    (async () => {
+      if (!tokenStore.access) {
+        setHydrated(true);
+        return;
+      }
+      try {
+        const res = await api<{ status: string; user: ApiUser }>("/auth/me");
+        if (!cancelled) setUser(toUser(res.user));
+      } catch (e) {
+        if (e instanceof ApiError && e.status === 401) tokenStore.clear();
+      } finally {
+        if (!cancelled) setHydrated(true);
+      }
+    })();
+    return () => { cancelled = true; };
   }, []);
 
-  const persist = useCallback((u: User | null) => {
-    setUser(u);
-    if (typeof window === "undefined") return;
-    if (u) localStorage.setItem(USER_KEY, JSON.stringify(u));
-    else localStorage.removeItem(USER_KEY);
+  const applyAuth = useCallback((payload: AuthPayload) => {
+    tokenStore.set(payload.accessToken, payload.refreshToken);
+    setUser(toUser(payload.user));
+    invalidateHistory();
   }, []);
 
   const login: AuthContextValue["login"] = async (email, password) => {
-    const accounts = readAccounts();
-    const found = accounts.find(
-      (a) => a.email.toLowerCase() === email.trim().toLowerCase(),
-    );
-    if (!found) throw new Error("No account found with that email.");
-    if (found.password !== password) throw new Error("Incorrect password.");
-    persist({
-      id: found.id,
-      name: found.name,
-      email: found.email,
-      avatar: found.avatar,
-      memberSince: found.memberSince,
-      isGuest: false,
+    const payload = await api<AuthPayload>("/auth/login", {
+      method: "POST",
+      auth: false,
+      body: { email: email.trim(), password },
     });
+    applyAuth(payload);
   };
 
   const signup: AuthContextValue["signup"] = async (name, email, password) => {
-    const accounts = readAccounts();
-    const normalizedEmail = email.trim().toLowerCase();
-    if (accounts.some((a) => a.email.toLowerCase() === normalizedEmail))
-      throw new Error("An account with this email already exists.");
-    const account: StoredAccount = {
-      id: `usr_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`,
-      name: name.trim(),
-      email: email.trim(),
-      password,
-      memberSince: new Date().toISOString(),
-    };
-    writeAccounts([...accounts, account]);
-    persist({
-      id: account.id,
-      name: account.name,
-      email: account.email,
-      memberSince: account.memberSince,
-      isGuest: false,
+    const payload = await api<AuthPayload>("/auth/signup", {
+      method: "POST",
+      auth: false,
+      body: { name: name.trim(), email: email.trim(), password },
     });
+    applyAuth(payload);
   };
 
-  const loginAsGuest = () => {
-    persist({
-      id: "guest",
-      name: "Guest",
-      email: "guest@StudyWise",
-      memberSince: new Date().toISOString(),
-      isGuest: true,
-    });
-  };
-
-  const logout = () => persist(null);
-
-  const updateProfile: AuthContextValue["updateProfile"] = (patch) => {
-    if (!user) return;
-    const next = { ...user, ...patch };
-    persist(next);
-    if (!user.isGuest) {
-      const accounts = readAccounts().map((a) =>
-        a.id === user.id
-          ? { ...a, name: next.name, email: next.email, avatar: next.avatar }
-          : a,
-      );
-      writeAccounts(accounts);
+  const logout: AuthContextValue["logout"] = async () => {
+    const refreshToken = tokenStore.refresh;
+    try {
+      await api("/auth/logout", {
+        method: "POST",
+        auth: false,
+        body: refreshToken ? { refreshToken } : {},
+      });
+    } catch {
+      /* best-effort */
     }
+    tokenStore.clear();
+    setUser(null);
+    invalidateHistory();
+  };
+
+  const updateProfile: AuthContextValue["updateProfile"] = async (patch) => {
+    // Backend exposes name/avatar via a dedicated endpoint if you add one;
+    // for now update locally after the call succeeds. Email changes require
+    // a separate flow (not exposed) — treat as no-op for that field.
+    if (!user) return;
+    setUser({ ...user, ...patch });
   };
 
   const value = useMemo<AuthContextValue>(
@@ -144,14 +136,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       user,
       hydrated,
       isAuthenticated: !!user,
-      isGuest: !!user?.isGuest,
+      isGuest: false,
       login,
       signup,
-      loginAsGuest,
       logout,
       updateProfile,
     }),
-    [user, hydrated],
+    [user, hydrated, applyAuth],
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

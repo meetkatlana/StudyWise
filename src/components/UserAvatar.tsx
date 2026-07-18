@@ -53,18 +53,13 @@ export function UserAvatar() {
           <div className="border-b border-white/60 px-3 py-2.5">
             <p className="truncate text-sm font-semibold text-foreground">{user.name}</p>
             <p className="truncate text-xs text-muted-foreground">{user.email}</p>
-            {user.isGuest && (
-              <span className="mt-1 inline-block rounded-full bg-accent/15 px-2 py-0.5 text-[10px] font-semibold text-accent">
-                Guest mode
-              </span>
-            )}
           </div>
           <MenuItem to="/dashboard" onClick={() => setOpen(false)} icon={<LayoutDashboard className="h-4 w-4" />}>Dashboard</MenuItem>
           <MenuItem to="/profile" onClick={() => setOpen(false)} icon={<User className="h-4 w-4" />}>Profile</MenuItem>
           <MenuItem to="/settings" onClick={() => setOpen(false)} icon={<SettingsIcon className="h-4 w-4" />}>Settings</MenuItem>
           <button
             onClick={() => {
-              logout();
+              void logout();
               setOpen(false);
               navigate({ to: "/login" });
             }}
