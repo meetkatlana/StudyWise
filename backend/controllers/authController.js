@@ -134,4 +134,4 @@ const me = asyncHandler(async (req, res) => {
   res.status(200).json({ status: "ok", user: publicUser(user) });
 });
 
-module.exports = { signup, login, refresh, logout, me };
+module.exports = { signup, login, refresh, logout, me, };
