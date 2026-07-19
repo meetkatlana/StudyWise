@@ -12,18 +12,28 @@ import {
   ArrowRight,
   Gauge,
   Hash,
+  AlertTriangle,
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
+import { useEffect, useRef, useState } from "react";
 import { useQuiz } from "../context/QuizContext";
 import {
   DIFFICULTIES,
   QUESTION_COUNTS,
   SUBJECTS,
+  generateQuiz,
   type Difficulty,
   type Subject,
 } from "../lib/quiz-data";
 
 export const Route = createFileRoute("/quiz")({
+  validateSearch: (s: Record<string, unknown>) => ({
+    subject: typeof s.subject === "string" ? (s.subject as string) : undefined,
+    topic: typeof s.topic === "string" ? (s.topic as string) : undefined,
+    difficulty:
+      typeof s.difficulty === "string" ? (s.difficulty as string) : undefined,
+    autostart: s.autostart === "1" || s.autostart === true ? true : undefined,
+  }),
   component: QuizConfig,
 });
 
@@ -46,20 +56,71 @@ const DIFFICULTY_META: Record<Difficulty, { hint: string; dots: number }> = {
 
 function QuizConfig() {
   const navigate = useNavigate();
+  const search = Route.useSearch();
   const {
     subject,
     difficulty,
     count,
+    topic,
     setSubject,
     setDifficulty,
     setCount,
+    setTopic,
     startQuiz,
   } = useQuiz();
 
   const ready = subject && difficulty && count;
+  const [poolError, setPoolError] = useState<string | null>(null);
+
+  // Preselect from URL (coach "Practice now").
+  const appliedRef = useRef(false);
+  useEffect(() => {
+    if (appliedRef.current) return;
+    if (search.subject && (SUBJECTS as readonly string[]).includes(search.subject)) {
+      setSubject(search.subject as Subject);
+    }
+    if (
+      search.difficulty &&
+      (DIFFICULTIES as string[]).includes(search.difficulty)
+    ) {
+      setDifficulty(search.difficulty as Difficulty);
+    }
+    setTopic(search.topic ?? null);
+    appliedRef.current = true;
+  }, [search, setSubject, setDifficulty, setTopic]);
+
+  // Autostart when arriving from Coach with subject+topic+difficulty ready.
+  useEffect(() => {
+    if (!search.autostart) return;
+    if (!subject || !difficulty || !count) return;
+    // Only run once per mount.
+    if (appliedRef.current !== true) return;
+    const preview = generateQuiz(subject, difficulty, count, topic);
+    if (preview.length === 0) {
+      setPoolError(
+        topic
+          ? `We don't have enough ${topic} questions in ${subject} (${difficulty}) yet. Try another difficulty or topic.`
+          : `We don't have enough ${subject} (${difficulty}) questions yet.`,
+      );
+      return;
+    }
+    const picked = startQuiz();
+    if (picked > 0) navigate({ to: "/attempt" });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [subject, difficulty, count, topic, search.autostart]);
 
   const handleGenerate = () => {
     if (!ready) return;
+    setPoolError(null);
+    const preview = generateQuiz(subject!, difficulty!, count!, topic);
+    if (preview.length === 0) {
+      setPoolError(
+        topic
+          ? `We don't have enough ${topic} questions in ${subject} (${difficulty}) yet. Try another difficulty or topic.`
+          : `We don't have enough ${subject} (${difficulty}) questions yet.`,
+      );
+      return;
+    }
     startQuiz();
     navigate({ to: "/attempt" });
   };
@@ -187,7 +248,7 @@ function QuizConfig() {
           <div className="mt-10 flex flex-col items-center gap-3 sm:flex-row sm:justify-between">
             <p className="text-xs text-muted-foreground">
               {ready
-                ? `Ready: ${subject} · ${difficulty} · ${count} questions`
+                ? `Ready: ${subject}${topic ? ` · ${topic}` : ""} · ${difficulty} · ${count} questions`
                 : "Complete all three steps to continue"}
             </p>
             <button
@@ -199,6 +260,25 @@ function QuizConfig() {
               <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-1" />
             </button>
           </div>
+          {poolError && (
+            <div className="mt-4 flex items-start gap-2 rounded-2xl border border-destructive/30 bg-destructive/5 p-3 text-sm text-destructive">
+              <AlertTriangle className="mt-0.5 h-4 w-4 flex-shrink-0" />
+              <span>{poolError}</span>
+            </div>
+          )}
+          {topic && !poolError && (
+            <p className="mt-3 text-xs text-muted-foreground">
+              Focused practice: only <strong>{topic}</strong> questions will be
+              included.{" "}
+              <button
+                type="button"
+                onClick={() => setTopic(null)}
+                className="font-semibold text-primary hover:underline"
+              >
+                Clear topic
+              </button>
+            </p>
+          )}
         </div>
       </div>
     </main>
