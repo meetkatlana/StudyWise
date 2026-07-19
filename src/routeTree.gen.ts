@@ -27,6 +27,7 @@ import { Route as AnalyticsRouteImport } from './routes/analytics'
 import { Route as AboutRouteImport } from './routes/about'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as ReviewAttemptIdRouteImport } from './routes/review.$attemptId'
+import { Route as OauthCallbackRouteImport } from './routes/oauth.callback'
 
 const SignupRoute = SignupRouteImport.update({
   id: '/signup',
@@ -118,6 +119,11 @@ const ReviewAttemptIdRoute = ReviewAttemptIdRouteImport.update({
   path: '/$attemptId',
   getParentRoute: () => ReviewRoute,
 } as any)
+const OauthCallbackRoute = OauthCallbackRouteImport.update({
+  id: '/oauth/callback',
+  path: '/oauth/callback',
+  getParentRoute: () => rootRouteImport,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -137,6 +143,7 @@ export interface FileRoutesByFullPath {
   '/review': typeof ReviewRouteWithChildren
   '/settings': typeof SettingsRoute
   '/signup': typeof SignupRoute
+  '/oauth/callback': typeof OauthCallbackRoute
   '/review/$attemptId': typeof ReviewAttemptIdRoute
 }
 export interface FileRoutesByTo {
@@ -157,6 +164,7 @@ export interface FileRoutesByTo {
   '/review': typeof ReviewRouteWithChildren
   '/settings': typeof SettingsRoute
   '/signup': typeof SignupRoute
+  '/oauth/callback': typeof OauthCallbackRoute
   '/review/$attemptId': typeof ReviewAttemptIdRoute
 }
 export interface FileRoutesById {
@@ -178,6 +186,7 @@ export interface FileRoutesById {
   '/review': typeof ReviewRouteWithChildren
   '/settings': typeof SettingsRoute
   '/signup': typeof SignupRoute
+  '/oauth/callback': typeof OauthCallbackRoute
   '/review/$attemptId': typeof ReviewAttemptIdRoute
 }
 export interface FileRouteTypes {
@@ -200,6 +209,7 @@ export interface FileRouteTypes {
     | '/review'
     | '/settings'
     | '/signup'
+    | '/oauth/callback'
     | '/review/$attemptId'
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -220,6 +230,7 @@ export interface FileRouteTypes {
     | '/review'
     | '/settings'
     | '/signup'
+    | '/oauth/callback'
     | '/review/$attemptId'
   id:
     | '__root__'
@@ -240,6 +251,7 @@ export interface FileRouteTypes {
     | '/review'
     | '/settings'
     | '/signup'
+    | '/oauth/callback'
     | '/review/$attemptId'
   fileRoutesById: FileRoutesById
 }
@@ -261,6 +273,7 @@ export interface RootRouteChildren {
   ReviewRoute: typeof ReviewRouteWithChildren
   SettingsRoute: typeof SettingsRoute
   SignupRoute: typeof SignupRoute
+  OauthCallbackRoute: typeof OauthCallbackRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -391,6 +404,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ReviewAttemptIdRouteImport
       parentRoute: typeof ReviewRoute
     }
+    '/oauth/callback': {
+      id: '/oauth/callback'
+      path: '/oauth/callback'
+      fullPath: '/oauth/callback'
+      preLoaderRoute: typeof OauthCallbackRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
@@ -423,6 +443,7 @@ const rootRouteChildren: RootRouteChildren = {
   ReviewRoute: ReviewRouteWithChildren,
   SettingsRoute: SettingsRoute,
   SignupRoute: SignupRoute,
+  OauthCallbackRoute: OauthCallbackRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
