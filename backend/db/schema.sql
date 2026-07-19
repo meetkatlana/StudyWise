@@ -27,8 +27,10 @@ CREATE TABLE IF NOT EXISTS users (
   id             UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   name           VARCHAR(120) NOT NULL,
   email          VARCHAR(255) NOT NULL UNIQUE,
-  password_hash  TEXT         NOT NULL,
+  password_hash  TEXT,                                 -- nullable: OAuth users have no password
   avatar_url     TEXT,
+  provider       VARCHAR(20)  NOT NULL DEFAULT 'local',
+  provider_id    VARCHAR(255),
   role           VARCHAR(20)  NOT NULL DEFAULT 'user',
   is_active      BOOLEAN      NOT NULL DEFAULT TRUE,
   created_at     TIMESTAMPTZ  NOT NULL DEFAULT NOW(),
@@ -36,6 +38,9 @@ CREATE TABLE IF NOT EXISTS users (
 );
 CREATE INDEX IF NOT EXISTS idx_users_email      ON users (LOWER(email));
 CREATE INDEX IF NOT EXISTS idx_users_created_at ON users (created_at DESC);
+CREATE UNIQUE INDEX IF NOT EXISTS uq_users_provider_identity
+  ON users (provider, provider_id)
+  WHERE provider_id IS NOT NULL;
 
 -- =====================================================================
 -- QUIZZES  (a quiz template: subject + difficulty + question set)
