@@ -11,6 +11,7 @@ const historyRoutes   = require("./historyRoutes");
 const dashboardRoutes = require("./dashboardRoutes");
 const aiRoutes        = require("./aiRoutes");
 const settingsRoutes  = require("./settingsRoutes");
+const coachRoutes     = require("./coachRoutes");
 
 const router = express.Router();
 
@@ -22,5 +23,6 @@ router.use("/history",   historyRoutes);
 router.use("/dashboard", dashboardRoutes);
 router.use("/ai",        aiRoutes);
 router.use("/settings",  settingsRoutes);
+router.use("/coach",     coachRoutes);
 
 module.exports = router;

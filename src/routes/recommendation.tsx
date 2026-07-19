@@ -1,37 +1,24 @@
-import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import {
-  ArrowLeft,
+  AlertTriangle,
   BookOpen,
   CalendarDays,
   ExternalLink,
+  FileText,
   Home,
   PlayCircle,
+  RefreshCw,
   Sparkles,
   Target,
   ThumbsUp,
   TrendingDown,
   TrendingUp,
 } from "lucide-react";
-import { useEffect, useMemo } from "react";
-import { useAttempt } from "../lib/history-store";
-import {
-  buildRoadmap,
-  coachNote,
-  computeTopicStats,
-  practiceItems,
-  recommendedVideos,
-  splitTopics,
-} from "../lib/recommendations";
+import { useCallback, useEffect, useState } from "react";
+import { api } from "../lib/api";
 import { RequireAuth } from "../components/RequireAuth";
 
-interface RecSearch {
-  id?: string;
-}
-
 export const Route = createFileRoute("/recommendation")({
-  validateSearch: (s: Record<string, unknown>): RecSearch => ({
-    id: typeof s.id === "string" ? s.id : undefined,
-  }),
   component: () => (
     <RequireAuth>
       <Recommendation />
@@ -39,49 +26,62 @@ export const Route = createFileRoute("/recommendation")({
   ),
 });
 
+interface TopicScore { topic: string; accuracy: number; subject?: string }
+interface RoadmapDay { day: number; title: string; duration: string }
+interface PracticeItem { title: string; subject?: string; difficulty: string }
+interface VideoItem { title: string; subtitle?: string; url: string }
+interface ResourceItem { title: string; type: string; subject?: string }
+
+interface CoachData {
+  empty: boolean;
+  coachNote?: string;
+  overallPerformance?: string;
+  averageScore?: number;
+  totalAttempts?: number;
+  weakTopics?: TopicScore[];
+  strongTopics?: TopicScore[];
+  roadmap?: RoadmapDay[];
+  recommendedPractice?: PracticeItem[];
+  recommendedVideos?: VideoItem[];
+  recommendedResources?: ResourceItem[];
+}
+
 function Recommendation() {
-  const navigate = useNavigate();
-  const { id } = Route.useSearch();
-  const { attempt, hydrated } = useAttempt(id);
+  const [data, setData] = useState<CoachData | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
-  useEffect(() => {
-    if (hydrated && !attempt) navigate({ to: "/quiz" });
-  }, [hydrated, attempt, navigate]);
+  const load = useCallback(async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      const res = await api<{ status: string; coach: CoachData }>("/coach");
+      setData(res.coach);
+    } catch (e: any) {
+      setError(e?.message || "Failed to load your AI Coach data");
+    } finally {
+      setLoading(false);
+    }
+  }, []);
 
-  const derived = useMemo(() => {
-    if (!attempt) return null;
-    const stats = computeTopicStats(attempt);
-    const { weak, strong } = splitTopics(stats);
-    return {
-      weak,
-      strong,
-      note: coachNote(attempt.accuracy),
-      roadmap: buildRoadmap(attempt.subject, weak),
-      practice: practiceItems(weak),
-      videos: recommendedVideos(attempt.subject, weak),
-    };
-  }, [attempt]);
+  useEffect(() => { load(); }, [load]);
 
-  if (!attempt || !derived) {
-    return (
-      <main className="mx-auto flex min-h-[60vh] max-w-lg flex-col items-center justify-center px-4 text-center">
-        <h1 className="font-display text-2xl font-bold text-foreground">
-          No recommendations yet
-        </h1>
-        <p className="mt-2 text-sm text-muted-foreground">
-          Complete a quiz to unlock your personalized study plan.
-        </p>
-        <Link
-          to="/quiz"
-          className="btn-primary mt-6 inline-flex items-center gap-2 rounded-2xl px-6 py-3 text-sm font-semibold"
-        >
-          Start a quiz
-        </Link>
-      </main>
-    );
-  }
+  if (loading) return <CoachSkeleton />;
+  if (error) return <CoachError message={error} onRetry={load} />;
+  if (!data || data.empty) return <CoachEmpty />;
 
-  const { weak, strong, note, roadmap, practice, videos } = derived;
+  const {
+    coachNote = "",
+    overallPerformance = "",
+    averageScore = 0,
+    totalAttempts = 0,
+    weakTopics = [],
+    strongTopics = [],
+    roadmap = [],
+    recommendedPractice = [],
+    recommendedVideos = [],
+    recommendedResources = [],
+  } = data;
 
   return (
     <main className="relative overflow-hidden bg-hero">
@@ -100,8 +100,7 @@ function Recommendation() {
             Your personalized <span className="gradient-text">roadmap</span>
           </h1>
           <p className="mx-auto mt-4 max-w-xl text-sm text-muted-foreground sm:text-base">
-            Tailored for {attempt.subject} · {attempt.difficulty} — you scored{" "}
-            {attempt.correctCount}/{attempt.questions.length} ({attempt.accuracy}%).
+            Based on {totalAttempts} completed {totalAttempts === 1 ? "quiz" : "quizzes"} · Average score {averageScore}% · Overall: {overallPerformance}
           </p>
         </div>
 
@@ -116,7 +115,7 @@ function Recommendation() {
             <h2 className="font-display text-lg font-semibold text-foreground">
               Coach's note
             </h2>
-            <p className="mt-1 text-sm text-muted-foreground">{note}</p>
+            <p className="mt-1 text-sm text-muted-foreground">{coachNote}</p>
           </div>
         </section>
 
@@ -126,14 +125,14 @@ function Recommendation() {
             hint="Prioritize these this week"
             icon={<TrendingDown className="h-4 w-4" strokeWidth={2.25} />}
             tone="destructive"
-            topics={weak}
+            topics={weakTopics}
           />
           <TopicList
             title="Strong topics"
             hint="Maintain with light revision"
             icon={<TrendingUp className="h-4 w-4" strokeWidth={2.25} />}
             tone="success"
-            topics={strong}
+            topics={strongTopics}
           />
         </div>
 
@@ -153,13 +152,13 @@ function Recommendation() {
               >
                 <div className="flex items-center justify-between">
                   <span className="font-display text-sm font-bold text-primary">
-                    {r.day}
+                    Day {r.day}
                   </span>
                   <span className="text-xs text-muted-foreground">
-                    {r.minutes} min
+                    {r.duration}
                   </span>
                 </div>
-                <p className="mt-2 text-sm font-medium text-foreground">{r.focus}</p>
+                <p className="mt-2 text-sm font-medium text-foreground">{r.title}</p>
               </li>
             ))}
           </ol>
@@ -173,34 +172,33 @@ function Recommendation() {
                 Recommended practice
               </h2>
             </div>
-            <ul className="mt-4 space-y-4">
-              {practice.map((p) => (
+            <ul className="mt-4 space-y-3">
+              {recommendedPractice.length === 0 && (
+                <li className="text-sm text-muted-foreground">No practice suggestions yet.</li>
+              )}
+              {recommendedPractice.map((p, i) => (
                 <li
-                  key={p.topic}
+                  key={`${p.title}-${i}`}
                   className="rounded-2xl border border-white/60 bg-white/70 p-4"
                 >
-                  <div className="flex items-center justify-between">
+                  <div className="flex items-center justify-between gap-3">
                     <span className="flex items-center gap-2 text-sm font-semibold text-foreground">
                       <BookOpen className="h-4 w-4 text-primary" />
-                      {p.topic}
+                      {p.title}
                     </span>
-                    <Link
-                      to="/quiz"
-                      className="text-xs font-semibold text-primary hover:underline"
-                    >
-                      Practice →
-                    </Link>
+                    <span className="rounded-full bg-primary/10 px-2.5 py-1 text-xs font-medium text-primary">
+                      {p.difficulty}
+                    </span>
                   </div>
-                  <ul className="mt-3 flex flex-wrap gap-1.5">
-                    {p.drills.map((d) => (
-                      <li
-                        key={d}
-                        className="rounded-full bg-primary/10 px-2.5 py-1 text-xs font-medium text-primary"
-                      >
-                        {d}
-                      </li>
-                    ))}
-                  </ul>
+                  {p.subject && (
+                    <p className="mt-1 text-xs text-muted-foreground">{p.subject}</p>
+                  )}
+                  <Link
+                    to="/quiz"
+                    className="mt-2 inline-block text-xs font-semibold text-primary hover:underline"
+                  >
+                    Practice now →
+                  </Link>
                 </li>
               ))}
             </ul>
@@ -214,7 +212,10 @@ function Recommendation() {
               </h2>
             </div>
             <ul className="mt-4 space-y-3">
-              {videos.map((v) => (
+              {recommendedVideos.length === 0 && (
+                <li className="text-sm text-muted-foreground">No video suggestions yet.</li>
+              )}
+              {recommendedVideos.map((v) => (
                 <li key={v.url}>
                   <a
                     href={v.url}
@@ -232,9 +233,11 @@ function Recommendation() {
                       <p className="truncate text-sm font-semibold text-foreground">
                         {v.title}
                       </p>
-                      <p className="truncate text-xs text-muted-foreground">
-                        {v.subtitle}
-                      </p>
+                      {v.subtitle && (
+                        <p className="truncate text-xs text-muted-foreground">
+                          {v.subtitle}
+                        </p>
+                      )}
                     </div>
                     <ExternalLink className="h-4 w-4 flex-shrink-0 text-muted-foreground transition-colors group-hover:text-primary" />
                   </a>
@@ -244,14 +247,41 @@ function Recommendation() {
           </section>
         </div>
 
+        {recommendedResources.length > 0 && (
+          <section className="glass mt-8 rounded-[24px] p-6 sm:p-7">
+            <div className="flex items-center gap-2">
+              <FileText className="h-5 w-5 text-accent" strokeWidth={2.25} />
+              <h2 className="font-display text-lg font-semibold text-foreground">
+                Recommended resources
+              </h2>
+            </div>
+            <ul className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+              {recommendedResources.map((r, i) => (
+                <li
+                  key={`${r.title}-${i}`}
+                  className="rounded-2xl border border-white/60 bg-white/70 p-4"
+                >
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm font-semibold text-foreground">{r.title}</span>
+                    <span className="rounded-full bg-accent/10 px-2 py-0.5 text-xs font-medium text-accent">
+                      {r.type}
+                    </span>
+                  </div>
+                  {r.subject && (
+                    <p className="mt-1 text-xs text-muted-foreground">{r.subject}</p>
+                  )}
+                </li>
+              ))}
+            </ul>
+          </section>
+        )}
+
         <div className="mt-10 flex flex-col-reverse gap-3 sm:flex-row sm:justify-between">
           <Link
-            to="/result"
-            search={{ id: attempt.id }}
+            to="/history"
             className="inline-flex items-center justify-center gap-2 rounded-2xl glass px-5 py-3 text-sm font-semibold text-foreground transition-transform hover:-translate-y-0.5"
           >
-            <ArrowLeft className="h-4 w-4" />
-            Back to results
+            View history
           </Link>
           <Link
             to="/"
@@ -266,6 +296,72 @@ function Recommendation() {
   );
 }
 
+function CoachSkeleton() {
+  return (
+    <main className="relative overflow-hidden bg-hero">
+      <div className="mx-auto max-w-6xl px-4 py-14 sm:px-6 sm:py-20 lg:px-8">
+        <div className="mx-auto h-6 w-52 animate-pulse rounded-full bg-white/60" />
+        <div className="mx-auto mt-5 h-10 w-3/4 animate-pulse rounded-2xl bg-white/60 sm:h-12" />
+        <div className="mx-auto mt-4 h-4 w-2/3 animate-pulse rounded-full bg-white/50" />
+        <div className="mt-10 h-28 animate-pulse rounded-[22px] bg-white/60" />
+        <div className="mt-6 grid gap-5 lg:grid-cols-2">
+          <div className="h-40 animate-pulse rounded-[22px] bg-white/60" />
+          <div className="h-40 animate-pulse rounded-[22px] bg-white/60" />
+        </div>
+        <div className="mt-8 h-64 animate-pulse rounded-[24px] bg-white/60" />
+        <div className="mt-8 grid gap-5 lg:grid-cols-2">
+          <div className="h-60 animate-pulse rounded-[24px] bg-white/60" />
+          <div className="h-60 animate-pulse rounded-[24px] bg-white/60" />
+        </div>
+      </div>
+    </main>
+  );
+}
+
+function CoachError({ message, onRetry }: { message: string; onRetry: () => void }) {
+  return (
+    <main className="mx-auto flex min-h-[60vh] max-w-lg flex-col items-center justify-center px-4 text-center">
+      <span className="grid h-12 w-12 place-items-center rounded-2xl bg-destructive/10 text-destructive">
+        <AlertTriangle className="h-6 w-6" />
+      </span>
+      <h1 className="font-display mt-4 text-2xl font-bold text-foreground">
+        Couldn't load your AI Coach
+      </h1>
+      <p className="mt-2 text-sm text-muted-foreground">{message}</p>
+      <button
+        onClick={onRetry}
+        className="btn-primary mt-6 inline-flex items-center gap-2 rounded-2xl px-6 py-3 text-sm font-semibold"
+      >
+        <RefreshCw className="h-4 w-4" />
+        Retry
+      </button>
+    </main>
+  );
+}
+
+function CoachEmpty() {
+  return (
+    <main className="mx-auto flex min-h-[60vh] max-w-lg flex-col items-center justify-center px-4 text-center">
+      <span className="grid h-12 w-12 place-items-center rounded-2xl bg-primary/10 text-primary">
+        <Sparkles className="h-6 w-6" />
+      </span>
+      <h1 className="font-display mt-4 text-2xl font-bold text-foreground">
+        No quiz history yet
+      </h1>
+      <p className="mt-2 text-sm text-muted-foreground">
+        Complete your first quiz to receive a personalized AI study plan.
+      </p>
+      <Link
+        to="/quiz"
+        className="btn-primary mt-6 inline-flex items-center gap-2 rounded-2xl px-6 py-3 text-sm font-semibold"
+      >
+        Start a quiz
+      </Link>
+    </main>
+  );
+}
+
+
 function TopicList({
   title,
   hint,
@@ -277,7 +373,7 @@ function TopicList({
   hint: string;
   icon: React.ReactNode;
   tone: "success" | "destructive";
-  topics: string[];
+  topics: TopicScore[];
 }) {
   const chipCls =
     tone === "success"
@@ -298,10 +394,11 @@ function TopicList({
         ) : (
           topics.map((t) => (
             <span
-              key={t}
+              key={t.topic}
               className={`rounded-full px-3 py-1.5 text-xs font-semibold ring-1 ${chipCls}`}
+              title={t.subject ? `${t.subject} · ${t.accuracy}%` : `${t.accuracy}%`}
             >
-              {t}
+              {t.topic} · {t.accuracy}%
             </span>
           ))
         )}
