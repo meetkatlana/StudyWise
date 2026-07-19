@@ -1,7 +1,9 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useState } from "react";
+import { Chrome, Github } from "lucide-react";
 import { AuthFormShell, TextField } from "../components/AuthFormShell";
 import { useAuth } from "../context/AuthContext";
+import { API_BASE_URL } from "../lib/api";
 
 export const Route = createFileRoute("/signup")({
   head: () => ({
@@ -104,7 +106,43 @@ function SignupPage() {
         >
           {loading ? "Creating account…" : "Create account"}
         </button>
+
+        <div className="relative py-1 text-center">
+          <span className="relative z-10 bg-white/70 px-3 text-xs uppercase tracking-wider text-muted-foreground backdrop-blur">
+            or sign up with
+          </span>
+          <div className="absolute inset-x-0 top-1/2 h-px bg-white/60" />
+        </div>
+
+        <div className="grid grid-cols-2 gap-2">
+          <SocialBtn provider="google" icon={<Chrome className="h-4 w-4" />} label="Google" />
+          <SocialBtn provider="github" icon={<Github className="h-4 w-4" />} label="GitHub" />
+        </div>
       </form>
     </AuthFormShell>
+  );
+}
+
+function SocialBtn({
+  provider,
+  icon,
+  label,
+}: {
+  provider: "google" | "github";
+  icon: React.ReactNode;
+  label: string;
+}) {
+  const start = () => {
+    window.location.href = `${API_BASE_URL}/auth/${provider}`;
+  };
+  return (
+    <button
+      type="button"
+      onClick={start}
+      className="flex items-center justify-center gap-2 rounded-full border border-white/60 bg-white/70 px-3 py-2 text-sm font-medium text-foreground shadow-soft transition-colors hover:bg-white"
+    >
+      {icon}
+      {label}
+    </button>
   );
 }

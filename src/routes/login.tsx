@@ -1,8 +1,9 @@
 import { createFileRoute, Link, useNavigate, useSearch } from "@tanstack/react-router";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Github, Chrome } from "lucide-react";
 import { AuthFormShell, TextField } from "../components/AuthFormShell";
 import { useAuth } from "../context/AuthContext";
+import { API_BASE_URL } from "../lib/api";
 
 export const Route = createFileRoute("/login")({
   head: () => ({
@@ -13,6 +14,7 @@ export const Route = createFileRoute("/login")({
   }),
   validateSearch: (s: Record<string, unknown>) => ({
     redirect: typeof s.redirect === "string" ? s.redirect : undefined,
+    oauth_error: typeof s.oauth_error === "string" ? s.oauth_error : undefined,
   }),
   component: LoginPage,
 });
@@ -26,6 +28,10 @@ function LoginPage() {
   const [remember, setRemember] = useState(true);
   const [err, setErr] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    if (search.oauth_error) setErr(search.oauth_error);
+  }, [search.oauth_error]);
 
   const next = () => {
     if (search.redirect) window.location.assign(search.redirect);
@@ -114,18 +120,32 @@ function LoginPage() {
         </div>
 
         <div className="grid grid-cols-2 gap-2">
-          <SocialBtn icon={<Chrome className="h-4 w-4" />} label="Google" />
-          <SocialBtn icon={<Github className="h-4 w-4" />} label="GitHub" />
+          <SocialBtn provider="google" icon={<Chrome className="h-4 w-4" />} label="Google" />
+          <SocialBtn provider="github" icon={<Github className="h-4 w-4" />} label="GitHub" />
         </div>
       </form>
     </AuthFormShell>
   );
 }
 
-function SocialBtn({ icon, label }: { icon: React.ReactNode; label: string }) {
+function SocialBtn({
+  provider,
+  icon,
+  label,
+}: {
+  provider: "google" | "github";
+  icon: React.ReactNode;
+  label: string;
+}) {
+  const start = () => {
+    // Full-page redirect to the backend's OAuth start endpoint.
+    // The backend redirects the browser back to /oauth/callback with tokens.
+    window.location.href = `${API_BASE_URL}/auth/${provider}`;
+  };
   return (
     <button
       type="button"
+      onClick={start}
       className="flex items-center justify-center gap-2 rounded-full border border-white/60 bg-white/70 px-3 py-2 text-sm font-medium text-foreground shadow-soft transition-colors hover:bg-white"
     >
       {icon}

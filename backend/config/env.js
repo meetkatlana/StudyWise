@@ -47,6 +47,25 @@ const env = {
     apiKey: process.env.OPENAI_API_KEY || "",
     model:  process.env.OPENAI_MODEL || "gpt-4o-mini",
   },
+
+  oauth: {
+    // Where to send the user AFTER OAuth completes (frontend origin).
+    frontendUrl:
+      process.env.FRONTEND_URL ||
+      (process.env.CORS_ORIGIN || "http://localhost:5173").split(",")[0].trim(),
+    // Base URL the OAuth provider redirects back to (this backend, publicly reachable).
+    callbackBaseUrl:
+      process.env.OAUTH_CALLBACK_BASE_URL ||
+      `http://localhost:${parseInt(process.env.PORT || "5000", 10)}`,
+    google: {
+      clientId:     process.env.GOOGLE_CLIENT_ID     || "",
+      clientSecret: process.env.GOOGLE_CLIENT_SECRET || "",
+    },
+    github: {
+      clientId:     process.env.GITHUB_CLIENT_ID     || "",
+      clientSecret: process.env.GITHUB_CLIENT_SECRET || "",
+    },
+  },
 };
 
 module.exports = env;
