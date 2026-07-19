@@ -106,26 +106,39 @@ const getCoachData = async (userId) => {
   const difficultyForPractice =
     averageScore >= 80 ? "Hard" : averageScore >= 50 ? "Medium" : "Easy";
 
+  const videoUrlFor = (subject, topic) =>
+    `https://www.youtube.com/results?search_query=${encodeURIComponent(
+      `${subject} ${topic}`.trim(),
+    )}`;
+  const notesUrlFor = (topic) =>
+    `/notes/${encodeURIComponent(topic)}`;
+
   const recommendedPractice = focusSeeds.slice(0, 4).map((t) => ({
     title: `${t.topic} practice set`,
     subject: t.subject,
+    topic: t.topic,
     difficulty: difficultyForPractice,
+    practiceTopic: t.topic,
+    practiceSubject: t.subject,
+    practiceDifficulty: difficultyForPractice,
   }));
 
   const recommendedVideos = focusSeeds.slice(0, 4).map((t) => ({
-    title: `${t.topic} — placement tutorial`,
+    title: `${t.topic} — ${t.subject} tutorial`,
     subtitle: `${t.subject} · YouTube`,
-    url: `https://www.youtube.com/results?search_query=${encodeURIComponent(
-      `${t.topic} ${t.subject} placement tutorial`,
-    )}`,
+    subject: t.subject,
+    topic: t.topic,
+    url: videoUrlFor(t.subject, t.topic),
+    videoUrl: videoUrlFor(t.subject, t.topic),
   }));
   if (recommendedVideos.length === 0) {
     recommendedVideos.push({
       title: `${primarySubject} interview playlist`,
       subtitle: `${primarySubject} · YouTube`,
-      url: `https://www.youtube.com/results?search_query=${encodeURIComponent(
-        `${primarySubject} placement interview`,
-      )}`,
+      subject: primarySubject,
+      topic: primarySubject,
+      url: videoUrlFor(primarySubject, "placement interview"),
+      videoUrl: videoUrlFor(primarySubject, "placement interview"),
     });
   }
 
@@ -133,6 +146,10 @@ const getCoachData = async (userId) => {
     title: `${t.topic} notes`,
     type: "Notes",
     subject: t.subject,
+    topic: t.topic,
+    notesUrl: notesUrlFor(t.topic),
+    // No curated resource library yet — surface as "Coming soon" in UI.
+    available: false,
   }));
 
   const subjectPerformance = Array.from(subjectMap.entries()).map(([subject, v]) => ({
