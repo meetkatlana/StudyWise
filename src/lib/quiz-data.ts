@@ -300,13 +300,19 @@ export function generateQuiz(
   subject: Subject,
   difficulty: Difficulty,
   count: number,
+  topic?: string | null,
 ): Question[] {
-  const bucket = BANK[subject]?.[difficulty] ?? [];
+  const rawBucket = BANK[subject]?.[difficulty] ?? [];
+  const bucket = topic
+    ? rawBucket.filter(
+        (q) => q.topic.toLowerCase() === topic.toLowerCase(),
+      )
+    : rawBucket;
   if (bucket.length === 0) return [];
 
   const withIds: Question[] = bucket.map((q, i) => ({
     ...q,
-    id: `${subject}::${difficulty}::${i}`,
+    id: `${subject}::${difficulty}::${topic ?? "_"}::${i}`,
     subject,
     difficulty,
   }));
