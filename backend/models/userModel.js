@@ -15,6 +15,56 @@ const createUser = async ({ name, email, passwordHash, avatarUrl = null }) => {
   return rows[0];
 };
 
+/**
+ * Create a user via an OAuth provider (no password).
+ */
+const createOAuthUser = async ({
+  name,
+  email,
+  provider,
+  providerId,
+  avatarUrl = null,
+}) => {
+  const { rows } = await query(
+    `INSERT INTO users (name, email, password_hash, avatar_url, provider, provider_id)
+     VALUES ($1, LOWER($2), NULL, $3, $4, $5)
+     RETURNING ${PUBLIC_COLS}`,
+    [name, email, avatarUrl, provider, providerId]
+  );
+  return rows[0];
+};
+
+/**
+ * Look up a user by (provider, provider_id) — e.g. ('google', 'sub-value').
+ */
+const findByProvider = async (provider, providerId) => {
+  const { rows } = await query(
+    `SELECT ${PUBLIC_COLS}
+       FROM users
+      WHERE provider = $1 AND provider_id = $2
+      LIMIT 1`,
+    [provider, providerId]
+  );
+  return rows[0] || null;
+};
+
+/**
+ * Attach an OAuth identity to an existing local account (same email).
+ * Only fills provider fields if they're not set; keeps the original name/email.
+ */
+const linkProvider = async (id, { provider, providerId, avatarUrl = null }) => {
+  const { rows } = await query(
+    `UPDATE users
+        SET provider    = CASE WHEN provider = 'local' OR provider IS NULL THEN $2 ELSE provider END,
+            provider_id = COALESCE(provider_id, $3),
+            avatar_url  = COALESCE(avatar_url, $4)
+      WHERE id = $1
+      RETURNING ${PUBLIC_COLS}`,
+    [id, provider, providerId, avatarUrl]
+  );
+  return rows[0] || null;
+};
+
 const findByEmail = async (email) => {
   const { rows } = await query(
     `SELECT id, name, email, password_hash, avatar_url, role, is_active, created_at, updated_at
@@ -74,8 +124,11 @@ const updateEmail = async (id, email) => {
 
 module.exports = {
   createUser,
+  createOAuthUser,
   findByEmail,
   findById,
+  findByProvider,
+  linkProvider,
   updateProfile,
   updateEmail,
   deleteUser,
