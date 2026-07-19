@@ -221,7 +221,7 @@ function Recommendation() {
                       subject: p.practiceSubject ?? p.subject,
                       topic: p.practiceTopic ?? p.topic,
                       difficulty: p.practiceDifficulty ?? p.difficulty,
-                      autostart: "1",
+                      autostart: true,
                     }}
                     className="mt-2 inline-block text-xs font-semibold text-primary hover:underline"
                   >
