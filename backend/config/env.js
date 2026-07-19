@@ -29,9 +29,10 @@ const env = {
     password: process.env.PGPASSWORD || "",
     database: process.env.PGDATABASE || "studywise",
     ssl:
-      String(process.env.PGSSL).toLowerCase() === "true"
-        ? { rejectUnauthorized: false }
-        : false,
+  process.env.PGSSL === "true" ||
+  process.env.PGSSLMODE === "require"
+    ? { rejectUnauthorized: false }
+    : false,
   },
 
   jwt: {
