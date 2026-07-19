@@ -68,5 +68,6 @@ const env = {
     },
   },
 };
-
+console.log("OAUTH_CALLBACK_BASE_URL =", process.env.OAUTH_CALLBACK_BASE_URL);
+console.log("callbackBaseUrl =", env.oauth.callbackBaseUrl);
 module.exports = env;

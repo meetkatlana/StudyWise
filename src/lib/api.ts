@@ -13,7 +13,7 @@ export const API_BASE_URL =
 const TOKEN_KEY = "StudyWise.token.v1";
 const REFRESH_KEY = "StudyWise.refresh.v1";
 
-export const tokenStore = {
+export const tokenStore = { 
   get access(): string | null {
     if (typeof window === "undefined") return null;
     return localStorage.getItem(TOKEN_KEY);
