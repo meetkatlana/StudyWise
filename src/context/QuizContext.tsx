@@ -10,6 +10,7 @@ interface QuizState {
   subject: Subject | null;
   difficulty: Difficulty | null;
   count: number | null;
+  topic: string | null;
   questions: Question[];
   // answers[i] = index of chosen option for question i, or null if unanswered.
   answers: (number | null)[];
@@ -21,7 +22,8 @@ interface QuizContextValue extends QuizState {
   setSubject: (s: Subject) => void;
   setDifficulty: (d: Difficulty) => void;
   setCount: (n: number) => void;
-  startQuiz: () => void;
+  setTopic: (t: string | null) => void;
+  startQuiz: () => number;
   selectAnswer: (questionIndex: number, optionIndex: number) => void;
   submitQuiz: (timeTakenSec: number) => void;
   resetQuiz: () => void;
@@ -37,6 +39,7 @@ const initialState: QuizState = {
   subject: null,
   difficulty: null,
   count: null,
+  topic: null,
   questions: [],
   answers: [],
   timeTakenSec: 0,
@@ -65,10 +68,13 @@ export function QuizProvider({ children }: { children: ReactNode }) {
       setSubject: (s) => setState((p) => ({ ...p, subject: s })),
       setDifficulty: (d) => setState((p) => ({ ...p, difficulty: d })),
       setCount: (n) => setState((p) => ({ ...p, count: n })),
-      startQuiz: () =>
+      setTopic: (t) => setState((p) => ({ ...p, topic: t })),
+      startQuiz: () => {
+        let picked = 0;
         setState((p) => {
           if (!p.subject || !p.difficulty || !p.count) return p;
-          const qs = generateQuiz(p.subject, p.difficulty, p.count);
+          const qs = generateQuiz(p.subject, p.difficulty, p.count, p.topic);
+          picked = qs.length;
           return {
             ...p,
             questions: qs,
@@ -76,7 +82,9 @@ export function QuizProvider({ children }: { children: ReactNode }) {
             submitted: false,
             timeTakenSec: 0,
           };
-        }),
+        });
+        return picked;
+      },
       selectAnswer: (qi, oi) =>
         setState((p) => {
           const next = [...p.answers];
