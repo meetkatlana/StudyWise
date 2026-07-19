@@ -28,9 +28,31 @@ export const Route = createFileRoute("/recommendation")({
 
 interface TopicScore { topic: string; accuracy: number; subject?: string }
 interface RoadmapDay { day: number; title: string; duration: string }
-interface PracticeItem { title: string; subject?: string; difficulty: string }
-interface VideoItem { title: string; subtitle?: string; url: string }
-interface ResourceItem { title: string; type: string; subject?: string }
+interface PracticeItem {
+  title: string;
+  subject?: string;
+  topic?: string;
+  difficulty: string;
+  practiceTopic?: string;
+  practiceSubject?: string;
+  practiceDifficulty?: string;
+}
+interface VideoItem {
+  title: string;
+  subtitle?: string;
+  url: string;
+  videoUrl?: string;
+  subject?: string;
+  topic?: string;
+}
+interface ResourceItem {
+  title: string;
+  type: string;
+  subject?: string;
+  topic?: string;
+  notesUrl?: string;
+  available?: boolean;
+}
 
 interface CoachData {
   empty: boolean;
@@ -195,6 +217,12 @@ function Recommendation() {
                   )}
                   <Link
                     to="/quiz"
+                    search={{
+                      subject: p.practiceSubject ?? p.subject,
+                      topic: p.practiceTopic ?? p.topic,
+                      difficulty: p.practiceDifficulty ?? p.difficulty,
+                      autostart: "1",
+                    }}
                     className="mt-2 inline-block text-xs font-semibold text-primary hover:underline"
                   >
                     Practice now →
@@ -216,9 +244,9 @@ function Recommendation() {
                 <li className="text-sm text-muted-foreground">No video suggestions yet.</li>
               )}
               {recommendedVideos.map((v) => (
-                <li key={v.url}>
+                <li key={v.videoUrl ?? v.url}>
                   <a
-                    href={v.url}
+                    href={v.videoUrl ?? v.url}
                     target="_blank"
                     rel="noopener noreferrer"
                     className="group flex items-center gap-3 rounded-xl border border-white/60 bg-white/70 p-3 transition-all hover:-translate-y-0.5 hover:bg-white hover:shadow-soft"
@@ -269,6 +297,30 @@ function Recommendation() {
                   </div>
                   {r.subject && (
                     <p className="mt-1 text-xs text-muted-foreground">{r.subject}</p>
+                  )}
+                  {r.available && r.notesUrl ? (
+                    <a
+                      href={r.notesUrl}
+                      className="mt-3 inline-flex items-center gap-1 text-xs font-semibold text-primary hover:underline"
+                    >
+                      Open notes →
+                    </a>
+                  ) : r.topic ? (
+                    <Link
+                      to="/notes/$topic"
+                      params={{ topic: r.topic }}
+                      className="mt-3 inline-flex items-center gap-1 text-xs font-semibold text-primary hover:underline"
+                    >
+                      Open notes →
+                    </Link>
+                  ) : (
+                    <button
+                      type="button"
+                      disabled
+                      className="mt-3 inline-flex cursor-not-allowed items-center gap-1 rounded-full bg-muted px-2.5 py-1 text-xs font-semibold text-muted-foreground"
+                    >
+                      Coming Soon
+                    </button>
                   )}
                 </li>
               ))}
